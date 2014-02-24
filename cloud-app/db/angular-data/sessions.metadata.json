@@ -1,0 +1,1 @@
+{ "options" : { "create" : "sessions" }, "indexes" : [ { "v" : 1, "key" : { "_id" : 1 }, "ns" : "angular-data.sessions", "name" : "_id_" } ] }

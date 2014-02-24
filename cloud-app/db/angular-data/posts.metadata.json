@@ -1,0 +1,1 @@
+{ "options" : { "create" : "posts" }, "indexes" : [ { "v" : 1, "key" : { "_id" : 1 }, "ns" : "angular-data.posts", "name" : "_id_" } ] }

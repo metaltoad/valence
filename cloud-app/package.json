@@ -1,0 +1,16 @@
+{
+  "name": "cloud-app",
+  "description": "REST API for the angular-data demo",
+  "version": "0.0.1",
+  "dependencies": {
+    "express": "3.x",
+    "mongodb": "~1.3.22",
+    "passport-local": "~0.1.6",
+    "passport": "~0.1.18",
+    "connect-flash": "~0.1.0",
+    "password-hash": "~1.2.1",
+    "connect-mongostore": "0.0.10",
+    "persistent-auth": "0.0.4",
+    "passport-remember-me": "0.0.1"
+  }
+}
