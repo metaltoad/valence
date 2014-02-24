@@ -4,9 +4,9 @@
  * ANGULAR AUTH
  *******************************************************************************************************
  */
-var auth = angular.module('ngAuth', []);
+var auth = angular.module('valenceAuth', []);
 
-auth.service('auth', ['ngAuth', '$rootScope', '$location', '$route', '$http', '$routeParams', '$q', function(ngAuth, $rootScope, $location, $route, $http, $routeParams, $q) {
+auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http', '$routeParams', '$q', function(valenceAuth, $rootScope, $location, $route, $http, $routeParams, $q) {
 
   var Service;
 
@@ -21,18 +21,18 @@ auth.service('auth', ['ngAuth', '$rootScope', '$location', '$route', '$http', '$
     // CONFIG AND ERROR HANDLING
     //------------------------------------------------------------------------------------------//
     // @description ensures the Auth module will have everything it needs.
-    if(ngAuth.endpoints) {
-      if(!ngAuth.endpoints.validate) {
-        throw "ngAuth - The Endpoints config item requires a 'validate' property. This is the property we use to validate an identity's active session."  
+    if(valenceAuth.endpoints) {
+      if(!valenceAuth.endpoints.validate) {
+        throw "valenceAuth - The Endpoints config item requires a 'validate' property. This is the property we use to validate an identity's active session."  
       }
-      if(!ngAuth.endpoints.login) {
-        throw "ngAuth - The Endpoints config item requires a 'login' property. This is the property we use to create a user auth identity."  
+      if(!valenceAuth.endpoints.login) {
+        throw "valenceAuth - The Endpoints config item requires a 'login' property. This is the property we use to create a user auth identity."  
       }
-      if(!ngAuth.endpoints.logout) {
-        throw "ngAuth - The Endpoints config item requires a 'logout' property. This is the property we use to destroy a user auth identity."  
+      if(!valenceAuth.endpoints.logout) {
+        throw "valenceAuth - The Endpoints config item requires a 'logout' property. This is the property we use to destroy a user auth identity."  
       }
     } else {
-      throw "ngAuth - No endpoints config found. Make sure in your app's .config() you specify $ngAuthProvider.endpoints = {}"
+      throw "valenceAuth - No endpoints config found. Make sure in your app's .config() you specify $valenceAuthProvider.endpoints = {}"
     }
 
     //
@@ -41,16 +41,16 @@ auth.service('auth', ['ngAuth', '$rootScope', '$location', '$route', '$http', '$
     this.isValidated = false;
 
     // Data store.
-    this.dataStore = ngAuth.dataStore;
+    this.dataStore = valenceAuth.dataStore;
 
     // Roles
-    this.roles = ngAuth.roles;
+    this.roles = valenceAuth.roles;
 
     // The very first time this page is loaded, we want to cehck auth
     this.firstVisit = true;
     
     // Localize auth scheme
-    this.scheme = ngAuth.scheme;
+    this.scheme = valenceAuth.scheme;
 
     // If the user specifyies teh token to live only in App memory,
     this.token = null;
@@ -69,7 +69,7 @@ auth.service('auth', ['ngAuth', '$rootScope', '$location', '$route', '$http', '$
         token = window.localStorage.token;
 
     // set it immediately to avoid extra http overhead
-    $http({method:ngAuth.endpoints.validate.method, url: ngAuth.endpoints.validate.URL, withCredentials: true, params: {token: token}}).success(function(data) {
+    $http({method:valenceAuth.endpoints.validate.method, url: valenceAuth.endpoints.validate.URL, withCredentials: true, params: {token: token}}).success(function(data) {
 
       // Check roles.
       if(route.auth && route.auth.roles) {
@@ -110,43 +110,43 @@ auth.service('auth', ['ngAuth', '$rootScope', '$location', '$route', '$http', '$
    * LOGIN
    *
    * @param  {[type]} userData [description]
-   * @description ngAuth's stock login function. Runs off provider config.
+   * @description valenceAuth's stock login function. Runs off provider config.
    */
   Auth.prototype.login = function(userData) {
     var self = this;
     if(userData) {
-      $http({method:ngAuth.endpoints.login.method, url: ngAuth.endpoints.login.URL, data:userData}).success(function(data) {
+      $http({method:valenceAuth.endpoints.login.method, url: valenceAuth.endpoints.login.URL, data:userData}).success(function(data) {
         var token = (data[self.scheme.name])? data[self.scheme.name] : '';
         var identity = (data[self.scheme.identity]);
 
         self.postFlow({isValidated: true, setToken:token, setIdentity: identity});
         // calling parse routes will simply get the identity set for us.
         self.parseRoutes(true);
-        $location.path(ngAuth.endpoints.new.success);
+        $location.path(valenceAuth.endpoints.new.success);
       }).error(function(data) {
         self.postFlow({isValidated: false, setToken:null});
-        $location.path(ngAuth.endpoints.new.fail);
+        $location.path(valenceAuth.endpoints.new.fail);
       });
     } else {
-      throw "ngAuth - you must provide credentials to this method."
+      throw "valenceAuth - you must provide credentials to this method."
     }
   };
 
   /**
    * LOGOUT
    * 
-   * @description ngAuth's stock logout function. Currently only support token based auth
+   * @description valenceAuth's stock logout function. Currently only support token based auth
    */
   Auth.prototype.logout = function() {
     var self = this;
-    $http({method:ngAuth.endpoints.logout.method, url: ngAuth.endpoints.logout.URL, params: {token:self.getToken()}}).success(function(data, status) {
-      if(ngAuth.endpoints.new.success) {
+    $http({method:valenceAuth.endpoints.logout.method, url: valenceAuth.endpoints.logout.URL, params: {token:self.getToken()}}).success(function(data, status) {
+      if(valenceAuth.endpoints.new.success) {
         self.postFlow({isValidated: false, setToken: null});
-        $location.path(ngAuth.endpoints.new.success);
+        $location.path(valenceAuth.endpoints.new.success);
       }
     }).error(function(data) {
-      if(ngAuth.endpoints.new.fail) {
-        $location.path(ngAuth.endpoints.new.fail);
+      if(valenceAuth.endpoints.new.fail) {
+        $location.path(valenceAuth.endpoints.new.fail);
       }
     });
   };
@@ -161,13 +161,13 @@ auth.service('auth', ['ngAuth', '$rootScope', '$location', '$route', '$http', '$
     var self = this;
 
     if(userData) {
-     return $http({method:ngAuth.endpoints.new.method, url: ngAuth.endpoints.new.URL, data:userData}).success(function(data, status) {
-        if(ngAuth.endpoints.new.validateOnNew) {
+     return $http({method:valenceAuth.endpoints.new.method, url: valenceAuth.endpoints.new.URL, data:userData}).success(function(data, status) {
+        if(valenceAuth.endpoints.new.validateOnNew) {
           self.postFlow({isValidated: true, setToken:data});
         }
 
-        if(ngAuth.endpoints.new.success) {
-          $location.path(ngAuth.endpoints.new.success);
+        if(valenceAuth.endpoints.new.success) {
+          $location.path(valenceAuth.endpoints.new.success);
         }
       }).error(function(data) {
         return data;
@@ -341,9 +341,9 @@ auth.service('auth', ['ngAuth', '$rootScope', '$location', '$route', '$http', '$
 
     if(route && route.auth.roles && route.auth.roles.length) {
       for(var i=0; i<route.auth.roles.length; i++) {
-        for(var j=0; j<ngAuth.roles.length; j++) {
-          if(route.auth.roles[i] === ngAuth.roles[j].role) {
-            ngAuth.roles[j].fn.call(this, def, $routeParams, $route);
+        for(var j=0; j<valenceAuth.roles.length; j++) {
+          if(route.auth.roles[i] === valenceAuth.roles[j].role) {
+            valenceAuth.roles[j].fn.call(this, def, $routeParams, $route);
           }
         }
       }
@@ -388,7 +388,7 @@ auth.service('auth', ['ngAuth', '$rootScope', '$location', '$route', '$http', '$
         // Capture routes without params first.
         // Sever execution if the location and route are a straight match.
         if(route === $location.path()) {
-          if($route.routes[route].auth || ngAuth.authEvery || force || self.firstVisit) {
+          if($route.routes[route].auth || valenceAuth.authEvery || force || self.firstVisit) {
             if($route.routes[route].auth && $route.routes[route].auth.redirect) {
               redirect = $route.routes[route].auth.redirect;
             }
@@ -446,7 +446,7 @@ auth.service('auth', ['ngAuth', '$rootScope', '$location', '$route', '$http', '$
               // Angular creates two routes for each app.js entry, one with a trailing /
               // this ensure it will only be run once.
               routeMached = true;
-              if($route.routes[route].auth || ngAuth.authEvery || force || self.firstVisit) {
+              if($route.routes[route].auth || valenceAuth.authEvery || force || self.firstVisit) {
                 if($route.routes[route].auth && $route.routes[route].auth.redirect) {
                   redirect = $route.routes[route].auth.redirect;
                 }
@@ -536,7 +536,7 @@ auth.service('auth', ['ngAuth', '$rootScope', '$location', '$route', '$http', '$
  * @description Expose the Auth module as a provider so that auth settings can be managed by Angular's config.
  * 
  */
-auth.provider('ngAuth', function() {
+auth.provider('valenceAuth', function() {
   return {
     dataStore: [],
     scheme: {
@@ -547,7 +547,7 @@ auth.provider('ngAuth', function() {
       transmissionMethod: 'query'
     },
     $get: function() {
-      this.roles = ngAuth.roles;
+      this.roles = valenceAuth.roles;
       return this;
     }
   }
@@ -566,15 +566,15 @@ auth.provider('ngAuth', function() {
  * @description Place holder object for some minimal global API
  * @type {Object}
  */
-window.ngAuth = {};
+window.valenceAuth = {};
 
 /**
  * ROLES
  *
- * @description  Placeholder store for roles registered via ngAuth.role()
+ * @description  Placeholder store for roles registered via valenceAuth.role()
  * @type {Array}
  */
-ngAuth.roles = [];
+valenceAuth.roles = [];
 
 /**
  * ROLE
@@ -584,7 +584,7 @@ ngAuth.roles = [];
  * @param  {Function} fn   [description]
  * @return {[type]}        [description]
  */
-ngAuth.role = function(role, fn) {
-  ngAuth.roles.push({role: role, fn: fn});
+valenceAuth.role = function(role, fn) {
+  valenceAuth.roles.push({role: role, fn: fn});
 };
 

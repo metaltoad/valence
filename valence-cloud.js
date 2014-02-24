@@ -4,9 +4,9 @@
  * ANGULAR DATA - ANGULAR DATA MODULES - CLOUD
  *******************************************************************************************************
  */
-ngDataApp.service('cloud', ['ngData', '$http', '$q', function(ngData, $http, $q) {
+valenceApp.service('cloud', ['valence', '$http', '$q', function(valence, $http, $q) {
   
-  var baseEarl = ngData.api + '/';
+  var baseEarl = valence.api + '/';
 
   function fetchModel(model, opts, query) {
     var def = $q.defer(),

@@ -8,8 +8,8 @@
  * 1. analyze the current route, see if route has model property.
  * 2. 
  */
-ngDataApp.service('model', ['ngData', 'auth', 'cloud', 'store', 'loader', '$route', '$rootScope', '$location', '$rootElement', '$q', '$routeParams',
-  function(ngData, auth, cloud, store, loader, $route, $rootScope, $location, $rootElement, $q, $routeParams) {
+valenceApp.service('model', ['valence', 'auth', 'cloud', 'store', 'loader', '$route', '$rootScope', '$location', '$rootElement', '$q', '$routeParams',
+  function(valence, auth, cloud, store, loader, $route, $rootScope, $location, $rootElement, $q, $routeParams) {
     console.log(auth);
   //
   // UTILITY FUNCTIONS
@@ -86,8 +86,8 @@ ngDataApp.service('model', ['ngData', 'auth', 'cloud', 'store', 'loader', '$rout
    */
   var Model = function() {
     // do stuff like check if ngModels has anything in it.
-    if(!ngData.models.length) {
-      throw 'ngData - no models in ngData.models were found. Add a model by using: ngData.model("myModelName", {})';
+    if(!valence.models.length) {
+      throw 'valence - no models in valence.models were found. Add a model by using: valence.model("myModelName", {})';
     }
   };
 
@@ -277,9 +277,9 @@ ngDataApp.service('model', ['ngData', 'auth', 'cloud', 'store', 'loader', '$rout
       getModelConfig: function(model) {
         var config;
 
-        for(var i=0; i<ngData.models.length; i++) {
-          if(ngData.models[i].name === model) {
-            config = ngData.models[i];
+        for(var i=0; i<valence.models.length; i++) {
+          if(valence.models[i].name === model) {
+            config = valence.models[i];
           }
         }
 
@@ -410,7 +410,7 @@ ngDataApp.service('model', ['ngData', 'auth', 'cloud', 'store', 'loader', '$rout
   //
   // ROOTSCOPE API
   //------------------------------------------------------------------------------------------//
-  // @description This API maps to the internal API to allow DOM actions to fire ngData events.
+  // @description This API maps to the internal API to allow DOM actions to fire valence events.
   
   /**
    * POST
@@ -488,7 +488,7 @@ ngDataApp.service('model', ['ngData', 'auth', 'cloud', 'store', 'loader', '$rout
                     if(data.hasOwnProperty(field)) {
                       scope[field] = data[field];
                     } else {
-                      console.warn('ngData - model property ['+ field +'] does not exist. Cannot assign to scope');
+                      console.warn('valence - model property ['+ field +'] does not exist. Cannot assign to scope');
                     }
                   } else {
                     // Further type checking is needed but not sure what to do here atm.
@@ -504,10 +504,10 @@ ngDataApp.service('model', ['ngData', 'auth', 'cloud', 'store', 'loader', '$rout
               safeApply(scope);
               loader.loaded(model);
             } else {
-              // console.warn('ngData - a model $apply was attempted but none of the provided fields were found in scope [$id: '+scope.$id+'], meaning we do not really know what scope to apply the model to.');
+              // console.warn('valence - a model $apply was attempted but none of the provided fields were found in scope [$id: '+scope.$id+'], meaning we do not really know what scope to apply the model to.');
             }
           } else {
-            // console.warn('ngData - Make sure your Model declaration has a [fields] property with the field names as keys for items in scope that are to receive model data.');
+            // console.warn('valence - Make sure your Model declaration has a [fields] property with the field names as keys for items in scope that are to receive model data.');
           }
         }
       }
@@ -616,7 +616,7 @@ ngDataApp.service('model', ['ngData', 'auth', 'cloud', 'store', 'loader', '$rout
         routeMached = false,
         routeSegs;
 
-    ngData.appliedModels = [];
+    valence.appliedModels = [];
 
     // Kick off the loader right away
     loader.run();
@@ -641,10 +641,10 @@ ngDataApp.service('model', ['ngData', 'auth', 'cloud', 'store', 'loader', '$rout
             }
             // Loop through models.
             for(var m=0; m<$route.routes[route].model.length; m++) {
-              for(var i=0; i<ngData.models.length; i++) {
-                if(ngData.models[i].name === $route.routes[route].model[m]) {
+              for(var i=0; i<valence.models.length; i++) {
+                if(valence.models[i].name === $route.routes[route].model[m]) {
                   // We have a route and model match!
-                  Model.get(ngData.models[i].name, ngData.models[i]);
+                  Model.get(valence.models[i].name, valence.models[i]);
                 }
               }
             }
@@ -711,10 +711,10 @@ ngDataApp.service('model', ['ngData', 'auth', 'cloud', 'store', 'loader', '$rout
                 }
                 // Loop through models
                 for(var m=0; m<$route.routes[route].model.length; m++) {
-                  for(var i=0; i<ngData.models.length; i++) {
+                  for(var i=0; i<valence.models.length; i++) {
                     // Start the process for getting the data!
-                    if(ngData.models[i].name === $route.routes[route].model[m]) {
-                      Model.get(ngData.models[i].name, ngData.models[i]);
+                    if(valence.models[i].name === $route.routes[route].model[m]) {
+                      Model.get(valence.models[i].name, valence.models[i]);
                     }
                   }
                 }

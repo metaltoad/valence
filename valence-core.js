@@ -5,7 +5,7 @@
  *******************************************************************************************************
  */
 
-ngDataApp.provider('ngData', {
+valenceApp.provider('valence', {
 
   modelAPI: {},
 
@@ -34,9 +34,9 @@ ngDataApp.provider('ngData', {
   appliedModels: [],
 
   $get: function($route) {
-    this.model = ngData.model;
-    this.models = ngData.models;
-    ngData = this;
+    this.model = valence.model;
+    this.models = valence.models;
+    valence = this;
     return this;
   }
 });

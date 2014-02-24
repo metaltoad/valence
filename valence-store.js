@@ -6,10 +6,10 @@
  * @TODO:
  *  1. Set up def
  */
-ngDataApp.service('store', ['ngData', '$q', function(ngData, $q) {
+valenceApp.service('store', ['valence', '$q', function(valence, $q) {
 
   /***********************************************************************************************************************************************
-   * NGDATA - STORE ADAPTERS
+   * VALENCE - STORE ADAPTERS
    ***********************************************************************************************************************************************
    * @description On page-load/navigation: 
    */
@@ -28,7 +28,7 @@ ngDataApp.service('store', ['ngData', '$q', function(ngData, $q) {
      * @return {[type]}       [description]
      */
     get: function(model) {
-      var store = JSON.parse(window.localStorage.ngStore),
+      var store = JSON.parse(window.localStorage.valenceStore),
           data;
 
       // Get store data if there.
@@ -45,30 +45,30 @@ ngDataApp.service('store', ['ngData', '$q', function(ngData, $q) {
      * @param {[type]} data  [description]
      */
     set: function(model, data) {
-      var store = JSON.parse(window.localStorage.ngStore);
+      var store = JSON.parse(window.localStorage.valenceStore);
 
       store[model] = data;
 
-      window.localStorage.ngStore = JSON.stringify(store);
+      window.localStorage.valenceStore = JSON.stringify(store);
 
       return this.get(model);
     }
   };
 
   /***********************************************************************************************************************************************
-   * NGDATA = STORE
+   * VALENCE = STORE
    ***********************************************************************************************************************************************
    * @description On page-load/navigation: 
    */
   var Store = function() {
 
     // Set default storage engine
-    this.store = (ngData.storageEngine && ngData.storageEngine.primary)? ngData.storageEngine.primary 
-      : (ngData.storageEngine && ngData.storageEngine.fallbackToMemory)? 'memory' : (window.localStorage)? 'localStorage': [];
+    this.store = (valence.storageEngine && valence.storageEngine.primary)? valence.storageEngine.primary 
+      : (valence.storageEngine && valence.storageEngine.fallbackToMemory)? 'memory' : (window.localStorage)? 'localStorage': [];
 
     // Create default LS space.
-    if(this.store === 'localStorage' && window.localStorage.ngStore === undefined) {
-      window.localStorage.ngStore = JSON.stringify({});
+    if(this.store === 'localStorage' && window.localStorage.valenceStore === undefined) {
+      window.localStorage.valenceStore = JSON.stringify({});
     }
 
     // Globalize it while debugging

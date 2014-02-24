@@ -5,20 +5,20 @@
  *******************************************************************************************************
  */
 
-var ngDataApp = angular.module('ngData', ['ngAuth']);
+var valenceApp = angular.module('valence', ['valenceAuth']);
 
-ngDataApp.run(['model', function(model) {}])
+valenceApp.run(['model', function(model) {}])
 
-window.ngData = {};
+window.valence = {};
 
-ngData.models = [];
+valence.models = [];
 
-ngData.model = function(model, fields) {
+valence.model = function(model, fields) {
   var match = false,
       obj = {};
 
-  for(var i=0;i<ngData.models.length; i++) {
-    if(ngData.models[i].name === model) {
+  for(var i=0;i<valence.models.length; i++) {
+    if(valence.models[i].name === model) {
       match = true;
     }
   }
@@ -29,7 +29,7 @@ ngData.model = function(model, fields) {
       obj[prop] = fields[prop];
     }
 
-    ngData.models.push(obj);
+    valence.models.push(obj);
   }
 };
 

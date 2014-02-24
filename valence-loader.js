@@ -4,7 +4,7 @@
  * ANGULAR DATA - ANGULAR DATA MODULES - LOADER
  *******************************************************************************************************
  */
-ngDataApp.service('loader', ['ngData', function(ngData) {
+valenceApp.service('loader', ['valence', function(valence) {
 
   var Loader = function() {
 
@@ -12,15 +12,15 @@ ngDataApp.service('loader', ['ngData', function(ngData) {
     this.queue = [];
 
     // Gernal flag to turn on/off the loader
-    this.enabeled = (ngData.loader && ngData.loader.enabeled === false)? false : true;
+    this.enabeled = (valence.loader && valence.loader.enabeled === false)? false : true;
 
     // Eventually holds reference to a time stamp.
     this.loaderStarted = null;
 
     // Classes for applying to the loader/content based on config or defaults.
     this.loaderClasses = {
-      hide: (ngData.loader.classes && ngData.loader.classes.hide)? ngData.loader.classes.hide : 'ngLoader-hidden',
-      show: (ngData.loader.classes && ngData.loader.classes.show)? ngData.loader.classes.show : 'ngLoader-visible'
+      hide: (valence.loader.classes && valence.loader.classes.hide)? valence.loader.classes.hide : 'ngLoader-hidden',
+      show: (valence.loader.classes && valence.loader.classes.show)? valence.loader.classes.show : 'ngLoader-visible'
     };
 
     // Holds references to DOM components that have loaders.
@@ -28,7 +28,7 @@ ngDataApp.service('loader', ['ngData', function(ngData) {
     this.contentCollection = [];
 
     // Minimum time to display the loader
-    this.minLoaderDisplayTime = ngData.loader.minLoaderDisplayTime || 500;
+    this.minLoaderDisplayTime = valence.loader.minLoaderDisplayTime || 500;
 
     return this;
   };
@@ -40,8 +40,8 @@ ngDataApp.service('loader', ['ngData', function(ngData) {
    * @return {[type]}       [description]
    */
   Loader.prototype.run = function(model, opts) {
-    var content = ngData.loader.content,
-        loaderElem = ngData.loader.loader;
+    var content = valence.loader.content,
+        loaderElem = valence.loader.loader;
 
     if(this.enabeled) {
       if(model) {
@@ -61,10 +61,10 @@ ngDataApp.service('loader', ['ngData', function(ngData) {
       }
 
       content = (document.querySelectorAll(content).length) ? document.querySelectorAll(content)
-        : (function() {throw 'ngData - ngLoader - It was requested that ['+content+'] be hidden when initiating the loader, however, no elements could be found in the DOM'})();
+        : (function() {throw 'valence - ngLoader - It was requested that ['+content+'] be hidden when initiating the loader, however, no elements could be found in the DOM'})();
 
       loaderElem = (document.querySelectorAll(loaderElem).length) ? document.querySelectorAll(loaderElem)
-        : (function() {throw 'ngData - ngLoader - It was requested that ['+loaderElem+'] be hidden when initiating the loader, however, no elements could be found in the DOM'})();
+        : (function() {throw 'valence - ngLoader - It was requested that ['+loaderElem+'] be hidden when initiating the loader, however, no elements could be found in the DOM'})();
 
       for(var i=0; i<content.length; i++) {
         content[i].classList.add(this.loaderClasses.hide);
@@ -101,7 +101,7 @@ ngDataApp.service('loader', ['ngData', function(ngData) {
 
       this.finish();
     } else {
-      throw 'ngData - ngLoader - Loader.loaded must be passed a model so it knows how "done" it is and when to stop the loader.'
+      throw 'valence - ngLoader - Loader.loaded must be passed a model so it knows how "done" it is and when to stop the loader.'
     }
   };
 
@@ -136,13 +136,13 @@ ngDataApp.service('loader', ['ngData', function(ngData) {
   Loader.prototype.wrapUp = function() {
     if(!this.contentCollection.length) {
       // TODO: test this
-      this.contentCollection = (document.querySelectorAll(ngData.loader.content).length) ? document.querySelectorAll(ngData.loader.content)
-        : (function() {throw 'ngData - ngLoader - It was requested that ['+ngData.loader.content+'] be hidden when initiating the loader, however, no elements could be found in the DOM'})();
+      this.contentCollection = (document.querySelectorAll(valence.loader.content).length) ? document.querySelectorAll(valence.loader.content)
+        : (function() {throw 'valence - ngLoader - It was requested that ['+valence.loader.content+'] be hidden when initiating the loader, however, no elements could be found in the DOM'})();
     }
 
     if(!this.loaderCollection.length) {
-      this.loaderCollection = (document.querySelectorAll(ngData.loader.loader).length) ? document.querySelectorAll(ngData.loader.loader)
-        : (function() {throw 'ngData - ngLoader - It was requested that ['+ngData.loader.loader+'] be hidden when initiating the loader, however, no elements could be found in the DOM'})(); 
+      this.loaderCollection = (document.querySelectorAll(valence.loader.loader).length) ? document.querySelectorAll(valence.loader.loader)
+        : (function() {throw 'valence - ngLoader - It was requested that ['+valence.loader.loader+'] be hidden when initiating the loader, however, no elements could be found in the DOM'})(); 
     }
 
     for(var i=0; i<this.loaderCollection.length; i++) {
