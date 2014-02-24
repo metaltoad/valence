@@ -1,0 +1,8 @@
+{{authors}}
+<h1>{{authors.name}}</h1>
+
+<hr>
+
+<ul>
+  <li ng-repeat="post in author_posts"><a ng-href="#/blog/{{post._id}}">{{post.title}}</a></li>
+</ul>

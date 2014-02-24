@@ -1,0 +1,20 @@
+<div>
+  <h1>{{title}}</h1>
+  <hr/>
+  <p>{{author}}</p>
+  <img ng-src="{{picture}}" alt="">
+  <p>{{body}}</p>
+</div>
+<div>
+  <a ng-href="#{{edit}}">edit</a>
+</div>
+<div id="new-comment">
+  <textarea ng-model="comment"></textarea>
+  <button type="submit" ng-click="saveComment('comments', {body: comment})">Post Comment</button>
+</div>
+<div id="comments">
+  <ul ng-repeat="comment in comments">
+    <li>{{comment.author}}</li>
+    <li>{{comment.date}}</li>
+    <li>{{comment.body}}</li>
+</div>

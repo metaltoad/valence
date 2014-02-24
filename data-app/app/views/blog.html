@@ -1,0 +1,18 @@
+{{posts}}
+<div>
+  <h1>Posts</h1>
+  <header>
+    <nav>
+      <ul>
+          <li><a href="#/blog/new" title="">New</a></li>
+          <li><a ng-click="predicate='-title'" title="">Title</a></li>
+        </ul>
+    </nav>
+  </header>
+  <li ng-repeat="post in posts | orderBy:predicate:false">{{post.title}}, by: <a href="#/authors/{{post.author_id}}">{{post.author}}</a>; {{post.created}}
+
+  <ul>
+    <li><a href="#/blog/{{post._id}}"><img ng-src="{{post.picture}}" /></a></li>
+  </ul>
+  </li>
+</div>
