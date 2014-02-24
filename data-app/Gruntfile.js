@@ -233,14 +233,14 @@ module.exports = function (grunt) {
           }
         },
         files: {
-          '<%= yeoman.app %>/bin/min/angular-data.min.js': [
-            '<%= yeoman.app %>/bin/angular-data.js',
-            '<%= yeoman.app %>/bin/angular-data-core.js',
-            '<%= yeoman.app %>/bin/angular-data-model.js',
-            '<%= yeoman.app %>/bin/angular-data-store.js',
-            '<%= yeoman.app %>/bin/angular-data-loader.js',
-            '<%= yeoman.app %>/bin/angular-data-cloud.js',
-            '<%= yeoman.app %>/bin/angular-data-auth.js'
+          '<%= yeoman.app %>/bin/min/valence.min.js': [
+            '<%= yeoman.app %>/bin/valence.js',
+            '<%= yeoman.app %>/bin/valence-core.js',
+            '<%= yeoman.app %>/bin/valence-model.js',
+            '<%= yeoman.app %>/bin/valence-store.js',
+            '<%= yeoman.app %>/bin/valence-loader.js',
+            '<%= yeoman.app %>/bin/valence-cloud.js',
+            '<%= yeoman.app %>/bin/valence-auth.js'
           ]
         }
       }
