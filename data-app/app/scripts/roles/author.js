@@ -1,18 +1,19 @@
-ngAuth.role('author', function(promise, $routeParams, $route) {
+valenceAuth.role('author', function(promise, $routeParams, $route) {
   var self = this,
       match = false;
 
-  ngModel.get('user').then(function(users) {
+  valenceModel.get('users').then(function(users) {
     var user = null,
         post = null;
-
+    
     for(var i=0; i<users.length; i++) {
       if(users[i]._id === self.getIdentity()._id) {
+        console.log('user match');
         user = users[i];
       }
     }
     if(user) {
-      ngModel.get('posts').then(function(posts) {
+      valenceModel.get('posts', {}).then(function(posts) {
         for(var i=0; i<posts.length; i++) {
           if(posts[i]._id === $routeParams.post_id) {
             post = posts[i];
