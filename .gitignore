@@ -1,1 +1,5 @@
 .DS_Store
+node_modules/
+cloud-app/node_modules/
+data-app/node_modules/
+
