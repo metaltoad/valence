@@ -1,4 +1,4 @@
-ngData.model('author_posts', {
+valence.model('author_posts', {
   fields: {
     author_posts: _model
   },

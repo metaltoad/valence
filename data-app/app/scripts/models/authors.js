@@ -1,7 +1,7 @@
-ngData.model('authors',  {
+valence.model('authors',  {
    belongsTo: {
     type:Object,
-    model: 'user',
+    model: 'users',
     by: {author_id: '_id'}
   },
   hasMany: {
@@ -11,4 +11,7 @@ ngData.model('authors',  {
   fields: {
     authors: _model
   },
+  HTTP: {
+    GET: {url: 'users', params: {author_id: '_id'}}
+  }
 })

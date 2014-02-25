@@ -1,4 +1,4 @@
-ngData.model('post', {
+valence.model('post', {
   belongsTo: {
     model: 'posts',
     type: Object,

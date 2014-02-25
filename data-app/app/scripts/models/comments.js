@@ -1,7 +1,7 @@
-ngData.model('comments', {
-  http: {
-    GET: {url: 'comments', params: ['post_id']},
-    POST: {url: 'comments', data: ['post_id']}
+valence.model('comments', {
+  HTTP: {
+    GET: {url: 'comments', params: {post_id: 'post_id'}},
+    POST: {url: 'comments', data: {post_id: 'post_id'}}
   },
   belongsTo: {
   	model: 'post',

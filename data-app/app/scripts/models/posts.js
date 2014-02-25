@@ -1,4 +1,4 @@
-ngData.model('posts', {
+valence.model('posts', {
   fields: {
     posts: _model
   },
@@ -7,9 +7,9 @@ ngData.model('posts', {
   },
   standAlone: 'blog',
   persistence: {
-    auth: true,
-    success: function($location, data) {
-      $location.path('/blog');
-    }
+    auth: true
+  },
+  HTTP: {
+    PUT: {url: 'posts', params: {post_id: 'post_id'}}
   }
 });
