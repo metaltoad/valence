@@ -53,7 +53,7 @@ var self = this;
 //
 // MODELS
 //------------------------------------------------------------------------------------------//
-var Users = require('./models/User');
+var Users = require('./models/Users');
 var Posts = require('./models/Posts');
 var Comments = require('./models/Comments');
 
@@ -106,7 +106,7 @@ exports.goForLaunch = function(go, err) {
   // APPLICATION ROUTES
   //------------------------------------------------------------------------------------------//
   var authRoutes = require('./routes/auth'); // Auth Routes
-  var userRoutes = require('./routes/user'); // User Routes
+  var userRoutes = require('./routes/users'); // User Routes
   var postsRoutes = require('./routes/posts'); // Posts
   var commentsRoutes = require('./routes/comments'); // Posts
 
