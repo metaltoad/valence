@@ -1,6 +1,6 @@
 'use strict';
 
-var app = angular.module('valenceApp', ['ngRoute', 'valence', 'valenceAuth']);
+var app = angular.module('valenceDemoApp', ['ngRoute', 'valence']);
 
 app.config(function ($routeProvider, valenceProvider, valenceAuthProvider) {
     
@@ -33,7 +33,7 @@ app.config(function ($routeProvider, valenceProvider, valenceAuthProvider) {
       method: 'GET'
     },
     new: {
-      URL: 'http://localhost:9001/user',
+      URL: 'http://localhost:9001/users',
       method: 'POST',
       success: '/',
       validateOnNew: true
@@ -73,7 +73,7 @@ app.config(function ($routeProvider, valenceProvider, valenceAuthProvider) {
     .when('/blog', {
       templateUrl: 'views/blog.html',
       controller: 'BlogCtrl',
-      model: ['posts', 'authors']
+      model: ['posts']
     })
     .when('/blog/new', {
       templateUrl: 'views/post/new.html',
