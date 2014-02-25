@@ -85,7 +85,7 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
   Store.prototype.getModel = function(model, opts, query) {
     var def = $q.defer(),
         data = Adapters[this.store].get(model),
-        qLen = (query)? Object.keys(query).length : null,
+        qLen = 0,
         mLen = 0,
         result;
 
@@ -101,17 +101,40 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
         // As all queries are kvp objects, we can assume that if the data in
         // the store is an array, they mean to query it by a collection of objects in the array.
         // However, as the original data is an array, we aggregate matched queryies back to an array.
+        
+        // Build query length outside of the for loop
+        // so it doesn't get bloated
+        for(var type in query) {
+          for(var param in query[type]) {
+            qLen++;
+          }
+        }
+
         if(data.constructor === Array) {
           result = [];
           for(var i=0; i<data.length; i++) {
             if(data[i].constructor === Object) {
-              for(var param in query) {
-                if(data[i][param] && data[i][param] === query[param]) {
-                  result.push(data[i]);
+              for(var type in query) {
+                for(var param in query[type]) {
+                  // Non strict equals here.
+                  if(data[i][param] && data[i][param] == query[type][param]) {
+                    mLen++;
+                    // If more than 0 and equal
+                    if(qLen && mLen && qLen === mLen) {
+                      // Since this can hit many times, only push
+                      // data to result set if not already there.
+                      if(result.indexOf(data[i]) === -1) {
+                        result.push(data[i]);
+                      }
+                    }
+                  }
                 }
               }
             }
+            // After each data set (row) iteration, reset matched counter
+            mLen = 0;
           }
+          
           // Structure processed
           // determine validity.
           if(result.length) {
@@ -121,9 +144,12 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
           }
         } else if(data.constructor === Object) {
           // loop through query to compare with data
-          for(var param in query) {
-            if(data[param] && data[param] === query[param]) {
-              mLen++; // Increment match count
+          for(var type in query) {
+            for(var param in query[type]) {
+              qLen++;
+              if(data[param] && data[param] === query[type][param]) {
+                mLen++;
+              }
             }
           }
 

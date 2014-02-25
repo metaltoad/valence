@@ -8,9 +8,8 @@
  * 1. analyze the current route, see if route has model property.
  * 2. 
  */
-valenceApp.service('model', ['valence', 'auth', 'cloud', 'store', 'loader', '$route', '$rootScope', '$location', '$rootElement', '$q', '$routeParams',
-  function(valence, auth, cloud, store, loader, $route, $rootScope, $location, $rootElement, $q, $routeParams) {
-    console.log(auth);
+valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$rootScope', '$location', '$rootElement', '$q', '$routeParams',
+  function(valence, cloud, store, loader, $route, $rootScope, $location, $rootElement, $q, $routeParams) {
   //
   // UTILITY FUNCTIONS
   //------------------------------------------------------------------------------------------//
@@ -118,32 +117,37 @@ valenceApp.service('model', ['valence', 'auth', 'cloud', 'store', 'loader', '$ro
             query;
 
         if(!opts) {
-          opts = self.getModelConfig(model);
+          opts = Model.fn.getModelConfig(model);
         }
 
         // Force bool
         belongsTo = !!opts.belongsTo;
         hasMany = !!opts.hasMany;
+       
+        // Determine if stand alone model.
         standAlone = self.isStandAlone(opts);
 
         if(belongsTo) {
           return this.init(opts.belongsTo.model, null, promise);
         } else {
           // Build query
-          query = self.buildParamQuery(opts);
-
+          query = Model.fn.buildParamQuery(opts);
+          
           store.getModel(model, opts, query).then(function(storeGetData) {
             if(hasMany && !standAlone) {
+              // loader.loaded(model);
               apply(model, opts, storeGetData);
               self.hasMany(model, opts.hasMany.model, null, promise);
             } else {
               apply(model, opts, storeGetData, promise);
             }
           }, function(storeGetData) {
-            console.log(storeGetData);
+            // Data not found in store, query cloud
             cloud.fetchModel(model, opts, query).then(function(cloudGetData) {
+              // Save to store.
               store.setModel(model, cloudGetData).then(function(storeSaveData) {
                 if(hasMany && !standAlone) {
+                  // loader.loaded(model);
                   apply(model, opts, storeSaveData);
                   self.hasMany(model, opts.hasMany.model, null, promise);
                 } else {
@@ -158,21 +162,28 @@ valenceApp.service('model', ['valence', 'auth', 'cloud', 'store', 'loader', '$ro
           });
         }
       },
-      // The idea here is that has many will always query the
-      // data source unless an http object is present and unless the http object is different
+      /**
+       * HAS MANY
+       * 
+       * @param  {[type]}  parentModel [description]
+       * @param  {[type]}  model       [description]
+       * @param  {[type]}  opts        [description]
+       * @param  {[type]}  promise     [description]
+       * @return {Boolean}             [description]
+       */
       hasMany: function(parentModel, model, opts, promise) {
         var self = this,
             hasMany = false,
-            parentOpts = this.getModelConfig(parentModel),
+            parentOpts = Model.fn.getModelConfig(parentModel),
             query;
 
         if(!opts) {
-          opts = this.getModelConfig(model);
+          opts = Model.fn.getModelConfig(model);
         }
 
         hasMany = !!opts.hasMany;
 
-        query = self.buildParamQuery(opts.belongsTo);
+        query = Model.fn.buildParamQuery(opts.belongsTo);
 
         store.getModel(model, opts, query).then(function(storeGetData) {
           if(hasMany) {
@@ -182,14 +193,12 @@ valenceApp.service('model', ['valence', 'auth', 'cloud', 'store', 'loader', '$ro
             apply(model, opts, storeGetData, promise);
           }
         }, function(storeGetData) {
-
-          // Not is store under store[model];
           // Query the parent model if config isn't specified
-          if((opts.HTTP && parentOpts.HTTP && opts.HTTP.GET.url === parentOpts.HTTP.GET.url) 
+          if((opts.HTTP && parentOpts.HTTP && opts.HTTP.GET && parentOpts.HTTP.GET && opts.HTTP.GET.url === parentOpts.HTTP.GET.url) 
               || (opts.HTTP && opts.HTTP.GET.url === parentModel) || !opts.HTTP) {
-            // Persisten data source is the same, query the parent store by query is query
+            // Persistent data source is the same, query the parent store by query is query
             store.getModel(parentModel, parentOpts, query).then(function(storeGetFromParentData) {
-              console.log(storeGetFromParentData);
+              // Now save that data to the store.
               store.setModel(model, storeGetFromParentData).then(function(storeSetFromParentData) {
                 if(hasMany) {
                   apply(model, opts, storeSetFromParentData);
@@ -214,9 +223,11 @@ valenceApp.service('model', ['valence', 'auth', 'cloud', 'store', 'loader', '$ro
                   }
                 }, function(storeSaveData) {
                   // Could not save to store, reject promise
+                  promise.reject(storeSaveData);
                 })
               }, function(cloudGetData) {
                 // cloud rejected, SOL. throw some error
+                promise.reject(cloudGetData);
               });
             });
           } else {
@@ -230,6 +241,7 @@ valenceApp.service('model', ['valence', 'auth', 'cloud', 'store', 'loader', '$ro
                 apply(model, opts, storeGetData, promise);
               }
             }, function(storeGetData) {
+              // 
               cloud.fetchModel(model, opts, query).then(function(cloudGetData) {
                 store.setModel(model, cloudGetData).then(function(storeSaveData) {
                   if(hasMany) {
@@ -240,50 +252,15 @@ valenceApp.service('model', ['valence', 'auth', 'cloud', 'store', 'loader', '$ro
                   }
                 }, function(storeSaveData) {
                   // Could not save to store, reject promise
+                  promise.reject(storeSaveData);
                 })
               }, function(cloudGetData) {
                 // cloud rejected, SOL.
+                promise.reject(cloudGetData);
               });
             });
           }
         });
-      },
-      /**
-       * BUILD PARAM QUERY
-       * 
-       * @param  {[type]} opts [description]
-       * @return {[type]}      [description]
-       */
-      buildParamQuery: function(opts) {
-        var query = {};
-
-        // Returns structured query
-        if(opts && opts.by && opts.by.constructor === Object) {
-          for(var param in opts.by) {
-            if($routeParams[param]) {
-              query[opts.by[param]] = $routeParams[param];
-            }
-          }
-        }
-
-        return (Object.keys(query).length)? query : false;
-      },
-      /**
-       * GET MODEL CONFIG
-       * 
-       * @param  {[type]} model [description]
-       * @return {[type]}       [description]
-       */
-      getModelConfig: function(model) {
-        var config;
-
-        for(var i=0; i<valence.models.length; i++) {
-          if(valence.models[i].name === model) {
-            config = valence.models[i];
-          }
-        }
-
-        return config;
       },
       /**
        * IS STAND ALONE
@@ -335,8 +312,89 @@ valenceApp.service('model', ['valence', 'auth', 'cloud', 'store', 'loader', '$ro
      */
     setter: {
       init: function(action, model, data, promise) {
+        var self = this,
+            opts = Model.fn.getModelConfig(model),
+            query;
+
+        loader.run(model, opts);
+
+        query = Model.fn.buildParamQuery(opts.HTTP[action.toUpperCase()]);
         
+        cloud.saveModel(model, action, opts, query, data).then(function(cloudSaveData) {
+          // now call get on the whole thing
+          cloud.fetchModel(model, opts, Model.fn.buildParamQuery(opts.HTTP.GET)).then(function(cloudGetData) {
+            store.setModel(model, cloudGetData).then(function(storeSaveData) {
+
+              apply(model, opts, storeSaveData, promise);
+            }, function(storeSaveData) {
+              // if we can't save to store
+              promise.reject(storeSaveData);
+              loader.loaded(model);
+            });
+            }, function(cloudGetData) {
+
+          });
+        }, function(cloudSaveData) {
+          // cloud save failed
+          promise.reject(cloudSaveData);
+          loader.loaded(model);
+        });
       }
+    },
+    /**
+     * GET MODEL CONFIG
+     * 
+     * @param  {[type]} model [description]
+     * @return {[type]}       [description]
+     */
+    getModelConfig: function(model) {
+      var config;
+
+      for(var i=0; i<valence.models.length; i++) {
+        if(valence.models[i].name === model) {
+          config = valence.models[i];
+        }
+      }
+
+      return config;
+    },
+    /**
+     * BUILD PARAM QUERY
+     * 
+     * @param  {[type]} opts [description]
+     * @return {[type]}      [description]
+     */
+    buildParamQuery: function(opts) {
+      var query = {},
+          predicate;
+
+      if(opts) {
+        if(opts.by) {
+          predicate = ['by'];
+        } else if(opts.params && !opts.data) {
+          predicate = ['params'];
+        } else if(opts.data && !opts.params) {
+          predicate = ['data'];
+        } else if(opts.params && opts.data) {
+          predicate = ['params', 'data'];
+        }
+      }
+
+      if(predicate) {
+        // Returns structured query
+        for(var i=0; i<predicate.length; i++) {
+          for(var param in opts[predicate[i]]) {
+            if($routeParams[param]) {
+              if(!query[predicate[i]]) {
+                query[predicate[i]] = {};
+              }
+              query[predicate[i]][opts[predicate[i]][param]] = $routeParams[param];
+            }
+          }
+        }
+      }
+
+      return (Object.keys(query).length)? query : false;
     }
   };
 
@@ -350,6 +408,7 @@ valenceApp.service('model', ['valence', 'auth', 'cloud', 'store', 'loader', '$ro
 
   /**
    * GET
+   * 
    * @param  {[type]} model [description]
    * @param  {[type]} opts  [description]
    * @return {[type]}       [description]
@@ -364,6 +423,7 @@ valenceApp.service('model', ['valence', 'auth', 'cloud', 'store', 'loader', '$ro
 
   /**
    * PUT
+   * 
    * @param {[type]} model [description]
    * @param {[type]} data  [description]
    */
@@ -377,6 +437,7 @@ valenceApp.service('model', ['valence', 'auth', 'cloud', 'store', 'loader', '$ro
 
   /**
    * POST
+   * 
    * @param {[type]} model [description]
    * @param {[type]} data  [description]
    */
@@ -390,6 +451,7 @@ valenceApp.service('model', ['valence', 'auth', 'cloud', 'store', 'loader', '$ro
 
   /**
    * REMOVE
+   * 
    * @param  {[type]} model [description]
    * @param  {[type]} data  [description]
    * @param  {[type]} def   [description]
@@ -405,8 +467,7 @@ valenceApp.service('model', ['valence', 'auth', 'cloud', 'store', 'loader', '$ro
   };
 
   // Globalize the API portion.
-  window.ngModel = API;;
-
+  window.valenceModel = API;
   //
   // ROOTSCOPE API
   //------------------------------------------------------------------------------------------//
@@ -480,7 +541,6 @@ valenceApp.service('model', ['valence', 'auth', 'cloud', 'store', 'loader', '$ro
               if(scope.hasOwnProperty(field)) {
                 matchedCount++;
                 if(fields[field] === _model) {
-                  console.log('just wants the model');
                   // Just assign the entire model back to scope and let the dev decide how to use it.
                   scope[field] = data;
                 } else {
