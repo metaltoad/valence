@@ -1,6 +1,6 @@
 var Db = require('../Db').db;
 var ObjectID = require('../Db').ObjectID;
-var User = require('./User');
+var Users = require('./Users');
 
 var self = this;
 
@@ -63,7 +63,7 @@ exports.findById = this.findById = function(id, fn) {
 exports.newPost = function(data, fn) {
   collection.find({title: data.title, author_id: data.author_id}).toArray(function(err, items) {
     if(!items.length) {
-      User.findById(data.author_id, function(err, user) {
+      Users.findById(data.author_id, function(err, user) {
         if(err) return fn(err);
         data.author = user.name;
         data.picture = "http://dummyimage.com/400x100&text="+placeImageTexts[parseInt(Math.random() * (placeImageTexts.length))];

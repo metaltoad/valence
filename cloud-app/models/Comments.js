@@ -1,5 +1,5 @@
 var Db = require('../Db').db;
-var User = require('./User');
+var Users = require('./Users');
 // var Posts = require('./Posts');
 
 var collection = Db.collection('comments', function(err, items) {

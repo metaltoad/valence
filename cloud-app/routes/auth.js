@@ -11,13 +11,14 @@ this.currentAuthedUser = {};
  */
 exports.initRoute = function(app, User) {
 
-  exports.createSession = function createSession(req, fn) {
+  exports.createSession = function createSession(userData, fn) {
     
-    if(!req.body.email && !req.body.password) {
+    if(!userData.email && !userData.password) {
       return fn(400, 'No email or password provided.');
     }
-
-    User.validateUser(req.body.email, req.body.password, function(err, user) {
+    
+    console.log('line 20', userData);
+    User.validateUser(userData.email, userData.password, function(err, user) {
       if (err) {return fn(404, err)}
 
       user = [user];
@@ -31,7 +32,6 @@ exports.initRoute = function(app, User) {
 
       Session.createSession(user._id, function(err, token) {
         if(err) {return fn(401, err)};
-        console.log(token);
         fn(200, {token: token, user: user});
       });
     });
@@ -45,6 +45,7 @@ exports.initRoute = function(app, User) {
    * @return {[type]}        [description]
    */
   app.post('/session', function(req, res, next) {
+    console.log('post to session', req);
     self.createSession(req, function(status, data) {
       res.send(status, data);
     });

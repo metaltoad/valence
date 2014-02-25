@@ -1,6 +1,6 @@
 var Db = require('../Db').db;
 var passHash = require('password-hash');
-var User = require('./User');
+var Users = require('./Users');
 
 var collection = Db.collection('sessions', function(err, items) {
   if(err) throw err;
@@ -39,7 +39,7 @@ exports.validateSession = function(token, fn) {
     if(err) return fn(err);
     console.log('validate session: ', item);
     if(item.length) {
-      User.findById(item[0].uid, function(err, user) {
+      Users.findById(item[0].uid, function(err, user) {
         if(err) return fn(err);
         return fn(null, user)
       });

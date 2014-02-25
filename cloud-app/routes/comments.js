@@ -20,6 +20,7 @@ exports.initRoute = function(app, Comments) {
   });
 
   app.post('/comments', function(req, res, next) {
+    if(!req.body.post_id) return res.send(400, 'Please provide the post_id in the message body.');
     Comments.createComment(req.body, function(err, data) {
       if(err) return res.send(400, 'Could not create post: '+err);
       res.send(200, data);
