@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('angularDataApp')
-  .controller('MainCtrl', function ($scope, model) {
+
+app.controller('MainCtrl', function ($scope, model) {
      
-  });
+});

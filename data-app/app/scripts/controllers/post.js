@@ -9,12 +9,16 @@ app.controller('PostCtrl', function ($scope, model, $location, auth, $location) 
   $scope.comments = model.comments;
 
   $scope.saveComment = function(model, data) {
-    console.log(model, data);
     $scope.save(model, data).then(function(pData) {
-      console.log(pData);
       $scope.comment = '';
     }, function(pData) {
       console.log('isErrorings?');
     })
-  }
+  };
+
+  $scope.createPost = function(data) {
+    $scope.save('posts', data).then(function(data) {
+      $location.path('/blog');
+    });
+  };
 });

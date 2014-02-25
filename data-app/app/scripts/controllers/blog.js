@@ -1,7 +1,5 @@
-app.controller('BlogCtrl', function ($scope, model) {
+app.controller('BlogCtrl', function ($scope, model, $location) {
     $scope.posts = model;
 
     $scope.predicate = '-created';
-
-    model.get('user');
   });
