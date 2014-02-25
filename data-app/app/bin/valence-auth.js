@@ -163,7 +163,7 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
     if(userData) {
      return $http({method:valenceAuth.endpoints.new.method, url: valenceAuth.endpoints.new.URL, data:userData}).success(function(data, status) {
         if(valenceAuth.endpoints.new.validateOnNew) {
-          self.postFlow({isValidated: true, setToken:data});
+          self.postFlow({isValidated: true, setToken:data[self.scheme.name], setIdentity: data.user});
         }
 
         if(valenceAuth.endpoints.new.success) {
@@ -255,6 +255,9 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
     var identity = null;
 
     if(this.scheme.storage === 'localStorage') {
+      if(!window.localStorage[this.scheme.identity]) {
+        window.localStorage[this.scheme.identity] = JSON.stringify({});
+      }
       identity = JSON.parse(window.localStorage[this.scheme.identity]);
     } else if(this.scheme.storage === 'cookie') {
       // parse cookies, not-written yet.
