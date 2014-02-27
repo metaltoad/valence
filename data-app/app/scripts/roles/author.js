@@ -8,7 +8,6 @@ valenceAuth.role('author', function(promise, $routeParams, $route) {
     
     for(var i=0; i<users.length; i++) {
       if(users[i]._id === self.getIdentity()._id) {
-        console.log('user match');
         user = users[i];
       }
     }

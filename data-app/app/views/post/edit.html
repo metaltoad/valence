@@ -2,5 +2,5 @@
 <form>
   <input type="text" ng-model="title">
   <textarea ng-model="body"></textarea>
-  <input type="submit" name="" value="save" ng-click="update('posts', {title: title, body: body, _id: _id})">
+  <input type="submit" name="" value="save" ng-click="updatePost({title: title, body: body}, _id)">
 </form>

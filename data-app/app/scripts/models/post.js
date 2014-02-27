@@ -9,7 +9,6 @@ valence.model('post', {
   },
   fields: {
     _id: '_id',
-    picture: 'picture',
     author: 'author',
     title: 'title',
     body: 'body',

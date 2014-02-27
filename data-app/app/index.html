@@ -15,30 +15,76 @@
     <!-- endbuild -->
   </head>
   <body ng-app="valenceDemoApp">
-    <!--[if lt IE 7]>
-      <p class="chromeframe">You are using an outdated browser. <a href="http://browsehappy.com/">Upgrade your browser today</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to better experience this site.</p>
-    <![endif]-->
+    <div id="bg-wrapper">
+      <!--[if lt IE 7]>
+        <p class="chromeframe">You are using an outdated browser. <a href="http://browsehappy.com/">Upgrade your browser today</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to better experience this site.</p>
+      <![endif]-->
 
-    <!--[if lt IE 9]>
-      <script src="components/es5-shim/es5-shim.js"></script>
-      <script src="components/json3/lib/json3.min.js"></script>
-    <![endif]-->
-    <datanav></datanav>
+      <!--[if lt IE 9]>
+        <script src="components/es5-shim/es5-shim.js"></script>
+        <script src="components/json3/lib/json3.min.js"></script>
+      <![endif]-->
+      <datanav></datanav>
 
-    <!-- Add your site or application content here -->
-    <div id="transition-wrapper">
-      <div class="container" ng-view></div>
+      <!-- Add your site or application content here -->
+      
+      <div id="transition-wrapper">
+        <div class="container" ng-view></div>
+      </div>
+
+      <footer id="footer">
+       <nav>
+          <ul>
+            <li><a href="" title="">Some</a></li>
+            <li><a href="" title="">Nav</a></li>
+            <li><a href="" title="">Items</a></li>
+          </ul>
+       </nav>
+      </footer>
+      <script src="components/angular/angular.js"></script>
+      <script src="components/angular-route/angular-route.js"></script>
+
+      <!-- build:js scripts/scripts.js -->
+      <script src="bin/valence.js"></script>
+      <script src="bin/valence-core.js"></script>
+      <script src="bin/valence-model.js"></script>
+      <script src="bin/valence-loader.js"></script>
+      <script src="bin/valence-store.js"></script>
+      <script src="bin/valence-cloud.js"></script>
+      <script src="bin/valence-auth.js"></script>
+      <!-- // <script src="bin/min/angular-data.min.js"></script> -->
+
+      <!-- Libraries -->
+      <script src="scripts/app.js"></script>
+
+      <!-- Controllers -->
+      <script src="scripts/controllers/main.js"></script>
+      <script src="scripts/controllers/blog.js"></script>
+      <script src="scripts/controllers/post.js"></script>
+      <script src="scripts/controllers/login.js"></script>
+      <script src="scripts/controllers/guides.js"></script>
+      <script src="scripts/controllers/sign-up.js"></script>
+      <script src="scripts/controllers/authors.js"></script>
+      <script src="scripts/controllers/docs.js"></script>
+
+      <!-- MODELS -->
+      <script src="scripts/models/posts.js"></script>
+      <script src="scripts/models/post.js"></script>
+      <script src="scripts/models/users.js"></script>
+      <script src="scripts/models/authors.js"></script>
+      <script src="scripts/models/author_posts.js"></script>
+      <script src="scripts/models/comments.js"></script>
+
+      <!-- Roles -->
+      <script src="scripts/roles/author.js"></script>
+
+      <!-- Directives -->
+      <script src="scripts/directives/nav.js"></script>
+
+      <!-- endbuild -->
     </div>
-
-    <footer id="footer">
-     <nav>
-        <ul>
-          <li><a href="" title="">Some</a></li>
-          <li><a href="" title="">Nav</a></li>
-          <li><a href="" title="">Items</a></li>
-        </ul>
-     </nav>
-    </footer>
+    <div id="content-wrapper">
+    </div>
     <div id="loader">
       <div>
         <div>
@@ -46,44 +92,5 @@
         </div>  
       </div>
     </div>
-    <script src="components/angular/angular.js"></script>
-    <script src="components/angular-route/angular-route.js"></script>
-
-    <!-- build:js scripts/scripts.js -->
-    // <script src="bin/valence.js"></script>
-    // <script src="bin/valence-core.js"></script>
-    // <script src="bin/valence-model.js"></script>
-    // <script src="bin/valence-loader.js"></script>
-    // <script src="bin/valence-store.js"></script>
-    // <script src="bin/valence-cloud.js"></script>
-    // <script src="bin/valence-auth.js"></script>
-    <!-- // <script src="bin/min/angular-data.min.js"></script> -->
-    <!-- Libraries -->
-    <script src="scripts/app.js"></script>
-
-    <!-- Controllers -->
-    <script src="scripts/controllers/main.js"></script>
-    <script src="scripts/controllers/blog.js"></script>
-    <script src="scripts/controllers/post.js"></script>
-    <script src="scripts/controllers/login.js"></script>
-    <script src="scripts/controllers/contact.js"></script>
-    <script src="scripts/controllers/sign-up.js"></script>
-    <script src="scripts/controllers/authors.js"></script>
-
-    <!-- MODELS -->
-    <script src="scripts/models/posts.js"></script>
-    <script src="scripts/models/post.js"></script>
-    <script src="scripts/models/users.js"></script>
-    <script src="scripts/models/authors.js"></script>
-    <script src="scripts/models/author_posts.js"></script>
-    <script src="scripts/models/comments.js"></script>
-
-    <!-- Roles -->
-    <script src="scripts/roles/author.js"></script>
-
-    <!-- Directives -->
-    <script src="scripts/directives/nav.js"></script>
-
-    <!-- endbuild -->
   </body>
 </html>

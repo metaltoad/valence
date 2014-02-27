@@ -2,8 +2,11 @@
 
 var app = angular.module('valenceDemoApp', ['ngRoute', 'valence']);
 
-app.config(function ($routeProvider, valenceProvider, valenceAuthProvider) {
-    
+app.config(function ($routeProvider, valenceProvider, valenceAuthProvider, $sceProvider) {
+  
+  // Disable sce
+  $sceProvider.enabled(false);
+  
   // NG DATA CONFIG
   valenceProvider.api = 'http://localhost:9001';
 
@@ -113,15 +116,17 @@ app.config(function ($routeProvider, valenceProvider, valenceAuthProvider) {
       controller: 'AuthorsCtrl',
       model: 'authors'
     })
-    .when('/contact', {
-      templateUrl: 'views/contact.html',
-      controller: 'ContactCtrl',
+    .when('/guides', {
+      templateUrl: 'views/guides.html',
+      controller: 'GuidesCtrl',
+    })
+    .when('/docs', {
+      templateUrl: 'views/docs.html',
+      controller: 'DocsCtrl',
     })
     .otherwise({
       redirectTo: '/'
     });
   });
 
-app.run(function($route, valence) {
-  
-}); 
+app.run(function($route, valence) {}); 
