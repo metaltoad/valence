@@ -21,4 +21,10 @@ app.controller('PostCtrl', function ($scope, model, $location, auth, $location) 
       $location.path('/blog');
     });
   };
+
+  $scope.updatePost = function(data, id) {
+    $scope.update('posts', data).then(function(post) {
+      $location.path('/blog/'+id);
+    });
+  };
 });
