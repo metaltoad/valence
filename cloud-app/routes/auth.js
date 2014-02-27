@@ -17,7 +17,6 @@ exports.initRoute = function(app, User) {
       return fn(400, 'No email or password provided.');
     }
     
-    console.log('line 20', userData);
     User.validateUser(userData.email, userData.password, function(err, user) {
       if (err) {return fn(404, err)}
 
@@ -45,8 +44,7 @@ exports.initRoute = function(app, User) {
    * @return {[type]}        [description]
    */
   app.post('/session', function(req, res, next) {
-    console.log('post to session', req);
-    self.createSession(req, function(status, data) {
+    self.createSession(req.body, function(status, data) {
       res.send(status, data);
     });
   });
@@ -82,7 +80,6 @@ exports.initRoute = function(app, User) {
       if(err) {
         res.send(401, err);
       } else {
-        console.log('get session data: ', data);
         res.send(200, data);
       }
     });

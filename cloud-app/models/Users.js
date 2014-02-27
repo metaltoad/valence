@@ -9,13 +9,14 @@ var collection  = Db.collection('users', function(err, collection) {
 
 exports.getUsers = function(id, fn) {
   var query = (id)? {_id: new ObjectID(id)} : {};
+  
   collection.find(query).toArray(function(err, users) {
     var obj = users.map(function(itm, idx) {
       delete itm.password;
       return itm;
     });
     
-    fn(err, obj);
+    return fn(err, obj);
   });
 };
 
@@ -59,7 +60,6 @@ exports.validateUser = function(email, pass, fn) {
 };
 
 exports.addUser = function(user, fn) {
-  console.log(user);
   collection.find({email: user.email}).toArray(function(err, items) {
     if(items.length) {
       fn('email already in use.');

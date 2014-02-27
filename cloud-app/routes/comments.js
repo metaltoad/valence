@@ -8,7 +8,6 @@
 exports.initRoute = function(app, Comments) {
 
   app.get('/comments', function(req, res, next) {
-    console.log(req);
     if(!req.query.post_id) {
       res.send(400, 'Please include the post_id of the comments you would like to get.');
     }

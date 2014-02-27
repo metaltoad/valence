@@ -85,7 +85,6 @@ exports.goForLaunch = function(go, err) {
   //
   app.get('/', function(req, res) {
     res.send('angular-data db');
-    console.log(req.headers);
   });
 
   // all access control origin for development

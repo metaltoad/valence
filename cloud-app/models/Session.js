@@ -14,7 +14,6 @@ exports.createSession = function(uid, fn) {
     if(!items.length) {
       collection.insert({uid:uid, token: token}, function(err, item) {
         if(err) return fn(err);
-        console.log('createSession: ', item);
         return fn(null, item[0].token);
       });
     } else {
@@ -37,7 +36,7 @@ exports.deleteSession = function(token, fn) {
 exports.validateSession = function(token, fn) {
   collection.find({token:token}).toArray(function(err, item) {
     if(err) return fn(err);
-    console.log('validate session: ', item);
+    
     if(item.length) {
       Users.findById(item[0].uid, function(err, user) {
         if(err) return fn(err);
