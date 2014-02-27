@@ -52,6 +52,19 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
       window.localStorage.valenceStore = JSON.stringify(store);
 
       return this.get(model);
+    },
+    remove: function(model) {
+      var store = JSON.parse(window.localStorage.valenceStore);
+
+      // Get store data if there.
+      if(store.hasOwnProperty(model)) {
+        delete store[model];
+
+        window.localStorage.valenceStore = JSON.stringify(store);
+        return true;
+      } else {
+        return false;
+      }
     }
   };
 
@@ -179,14 +192,32 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
 
     // Check the store for the current model
     res = Adapters[this.store].set(model, data);
-
+    console.log(res);
     if(res) {
+      console.log('resolving');
       def.resolve(res);
     } else {
       def.reject(false);
     }
 
     // Return promise
+    return def.promise;
+  };
+
+  /**
+   * DELETE MODEL
+   * @param  {[type]} model [description]
+   * @return {[type]}       [description]
+   */
+  Store.prototype.deleteModel = function(model) {
+    var def = $q.defer();
+
+    if(Adapters[this.store].remove(model)) {
+      def.resolve(true);
+    } else {
+      def.reject(false);
+    }
+
     return def.promise;
   };
 

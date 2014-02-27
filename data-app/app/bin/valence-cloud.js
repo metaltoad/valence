@@ -59,7 +59,7 @@ valenceApp.service('cloud', ['valence', 'auth', '$http', '$q', function(valence,
         token,
         httpOpts = {};
 
-
+        console.log(model, action, data, query);
     action = action.toUpperCase();
 
     httpOpts.method = action;
@@ -95,6 +95,7 @@ valenceApp.service('cloud', ['valence', 'auth', '$http', '$q', function(valence,
     
     // Send request
     $http(httpOpts).success(function(data) {
+      console.log(data);
       def.resolve(data);
     }).error(function(data, status, headers, config) {
       def.reject({data: data, status: status, headers: headers, config: config});
