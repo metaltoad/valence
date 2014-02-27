@@ -314,18 +314,29 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
       init: function(action, model, data, promise) {
         var self = this,
             opts = Model.fn.getModelConfig(model),
+            hasMany,
             query;
 
+        // Start the loader
         loader.run(model, opts);
 
+        // If it has child models.
+        hasMany = !!(opts.hasMany && opts.hasMany.model);
+
         query = Model.fn.buildParamQuery(opts.HTTP[action.toUpperCase()]);
-        
+
         cloud.saveModel(model, action, opts, query, data).then(function(cloudSaveData) {
+          console.log(cloudSaveData);
           // now call get on the whole thing
           cloud.fetchModel(model, opts, Model.fn.buildParamQuery(opts.HTTP.GET)).then(function(cloudGetData) {
             store.setModel(model, cloudGetData).then(function(storeSaveData) {
-
-              apply(model, opts, storeSaveData, promise);
+              if(hasMany && Model.fn.getModelConfig(opts.hasMany.model).belongsTo.model === model) {
+                store.deleteModel(opts.hasMany.model).then(function() {
+                  apply(model, opts, storeSaveData, promise);
+                });
+              } else {
+                apply(model, opts, storeSaveData, promise);
+              }
             }, function(storeSaveData) {
               // if we can't save to store
               promise.reject(storeSaveData);
