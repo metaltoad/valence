@@ -29,7 +29,6 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
         clearInterval(applier);
         scope.$apply(fn);
       }
-      console.log('apply timer');
     }, 100);
   };
 
@@ -145,6 +144,9 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
             // Data not found in store, query cloud
             cloud.fetchModel(model, opts, query).then(function(cloudGetData) {
               // Save to store.
+              if(opts.serializer) {
+                cloudGetData = opts.serializer(cloudGetData);
+              }
               store.setModel(model, cloudGetData).then(function(storeSaveData) {
                 if(hasMany && !standAlone) {
                   // loader.loaded(model);
@@ -198,6 +200,8 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
               || (opts.HTTP && opts.HTTP.GET.url === parentModel) || !opts.HTTP) {
             // Persistent data source is the same, query the parent store by query is query
             store.getModel(parentModel, parentOpts, query).then(function(storeGetFromParentData) {
+              // TODO: TEST hasMany SERIALIZATION
+              // if(opts.serializer) {storeGetFromParentData = opts.serializer(cloudGetData)}
               // Now save that data to the store.
               store.setModel(model, storeGetFromParentData).then(function(storeSetFromParentData) {
                 if(hasMany) {
@@ -213,6 +217,7 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
               // We couldn't find what we needed in our parent data so we
               // need to go fetch from das cloud.
               cloud.fetchModel(model, opts, query).then(function(cloudGetData) {
+                if(opts.serializer) {cloudGetData = opts.serializer(cloudGetData);}
                 // Success! Save to store
                 store.setModel(model, cloudGetData).then(function(storeSaveData) {
                   if(hasMany) {
@@ -231,7 +236,7 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
               });
             });
           } else {
-            // child depend is form totally different data store, kick off the retrieval sequence without
+            // child depend is fromm totally different data store, kick off the retrieval sequence without
             // care of what the parent wants #suchRebel
             store.getModel(model, opts, query).then(function(storeGetData) {
               if(hasMany) {
@@ -243,6 +248,9 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
             }, function(storeGetData) {
               // 
               cloud.fetchModel(model, opts, query).then(function(cloudGetData) {
+                // Serialize
+                if(opts.serializer) {cloudGetData = opts.serializer(cloudGetData)}
+                // Save to store
                 store.setModel(model, cloudGetData).then(function(storeSaveData) {
                   if(hasMany) {
                     apply(model, opts, storeSaveData)
@@ -326,7 +334,6 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
         query = Model.fn.buildParamQuery(opts.HTTP[action.toUpperCase()]);
 
         cloud.saveModel(model, action, opts, query, data).then(function(cloudSaveData) {
-          console.log(cloudSaveData);
           // now call get on the whole thing
           cloud.fetchModel(model, opts, Model.fn.buildParamQuery(opts.HTTP.GET)).then(function(cloudGetData) {
             store.setModel(model, cloudGetData).then(function(storeSaveData) {
@@ -367,6 +374,7 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
         }
       }
 
+      if(!config) throw 'Valence - model for ['+model+'] not found. Make sure to declare one through valence.model()';
       return config;
     },
     /**
@@ -575,10 +583,10 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
               safeApply(scope);
               loader.loaded(model);
             } else {
-              // console.warn('valence - a model $apply was attempted but none of the provided fields were found in scope [$id: '+scope.$id+'], meaning we do not really know what scope to apply the model to.');
+              console.warn('valence - a model $apply was attempted but none of the provided fields were found in scope [$id: '+scope.$id+'], meaning we do not really know what scope to apply the model to.');
             }
           } else {
-            // console.warn('valence - Make sure your Model declaration has a [fields] property with the field names as keys for items in scope that are to receive model data.');
+            console.warn('valence - Make sure your Model declaration has a [fields] property with the field names as keys for items in scope that are to receive model data.');
           }
         }
       }
@@ -602,8 +610,8 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
             return [data];
           },
           Object: function(data) {
-            console.log('object caster called');
             var obj = {};
+
             if(data.constructor !== Array) {
               data = [data];
             }

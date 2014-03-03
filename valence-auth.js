@@ -17,6 +17,10 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
 
   var Auth = function(arg) {
     
+    // Total short circuit
+    if(!valenceAuth.enabled) {
+      return;
+    }
     //
     // CONFIG AND ERROR HANDLING
     //------------------------------------------------------------------------------------------//
@@ -525,9 +529,11 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
   //
   // ROUTE HOOKS
   //------------------------------------------------------------------------------------------//
-  $rootScope.$on('$routeChangeSuccess', function() {
-    Service.parseRoutes();
-  });
+  if(valenceAuth.enabled) {
+    $rootScope.$on('$routeChangeSuccess', function() {
+      Service.parseRoutes();
+    });
+  }
 
   return this.Auth;
 }]);

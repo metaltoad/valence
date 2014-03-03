@@ -10,9 +10,9 @@ valenceApp.service('loader', ['valence', function(valence) {
 
     // Model queue used in determining when to shut down the loader
     this.queue = [];
-
-    // Gernal flag to turn on/off the loader
-    this.enabeled = (valence.loader && valence.loader.enabeled === false)? false : true;
+    console.log(valence);
+    // Gernal flag to turn on/off the loader, enabled by default
+    this.enabled = (valence.loader && valence.loader.enabled === false)? false : true;
 
     // Eventually holds reference to a time stamp.
     this.loaderStarted = null;
@@ -30,6 +30,16 @@ valenceApp.service('loader', ['valence', function(valence) {
     // Minimum time to display the loader
     this.minLoaderDisplayTime = valence.loader.minLoaderDisplayTime || 500;
 
+    if(!this.enabled) {
+      return this.prototype = {
+        run: function(){},
+        loaded:function(){},
+        finish:function(){},
+        wrapUp: function(){},
+        halt:function(){}
+      }
+    }
+
     return this;
   };
 
@@ -43,7 +53,7 @@ valenceApp.service('loader', ['valence', function(valence) {
     var content = valence.loader.content,
         loaderElem = valence.loader.loader;
 
-    if(this.enabeled) {
+    if(this.enabled) {
       if(model) {
         this.queue.push({name: model, opts:opts});
         if(model.loader) {
