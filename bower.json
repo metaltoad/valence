@@ -1,7 +1,7 @@
 {
   "name": "valence",
   "main": "valence.js",
-  "version": "0.0.0",
+  "version": "0.2.0",
   "homepage": "https://github.com/metaltoad/valence",
   "description": "Data, Authentication and View Transition layers for Angular applications.",
   "keywords": [
