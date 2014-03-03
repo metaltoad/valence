@@ -10,7 +10,7 @@ app.directive('datanav', function($compile) {
       $scope.getNavTemplate = 'http://localhost:9000/scripts/directives/templates/' + ((auth.isValidated)? 'logged-in_nav.html' : 'logged-out_nav.html');
       
       auth.onceAuthed(function() {
-        $compile($element)($scope)
+        $compile($element)($scope);
       })
 
       $scope.auth = auth;
