@@ -33,6 +33,8 @@ valenceApp.provider('valence', {
 
   appliedModels: [],
 
+  storageEngine: {primary: 'localStorage', fallbackToMemory: true},
+
   $get: function($route) {
     this.model = valence.model;
     this.models = valence.models;
