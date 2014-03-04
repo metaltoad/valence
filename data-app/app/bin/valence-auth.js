@@ -21,6 +21,7 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
     if(!valenceAuth.enabled) {
       return;
     }
+
     //
     // CONFIG AND ERROR HANDLING
     //------------------------------------------------------------------------------------------//
@@ -61,6 +62,9 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
 
     return this;
   };
+
+  // Add to prototype for early onset lookups.
+  Auth.prototype.scheme = valenceAuth.scheme;
 
   /**
    * VALIDATE
@@ -126,10 +130,10 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
         self.postFlow({isValidated: true, setToken:token, setIdentity: identity});
         // calling parse routes will simply get the identity set for us.
         self.parseRoutes(true);
-        $location.path(valenceAuth.endpoints.new.success);
+        $location.path(valenceAuth.endpoints.create.success);
       }).error(function(data) {
         self.postFlow({isValidated: false, setToken:null});
-        $location.path(valenceAuth.endpoints.new.fail);
+        $location.path(valenceAuth.endpoints.create.fail);
       });
     } else {
       throw "valenceAuth - you must provide credentials to this method."
@@ -144,34 +148,34 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
   Auth.prototype.logout = function() {
     var self = this;
     $http({method:valenceAuth.endpoints.logout.method, url: valenceAuth.endpoints.logout.URL, params: {token:self.getToken()}}).success(function(data, status) {
-      if(valenceAuth.endpoints.new.success) {
+      if(valenceAuth.endpoints.create.success) {
         self.postFlow({isValidated: false, setToken: null});
-        $location.path(valenceAuth.endpoints.new.success);
+        $location.path(valenceAuth.endpoints.create.success);
       }
     }).error(function(data) {
-      if(valenceAuth.endpoints.new.fail) {
-        $location.path(valenceAuth.endpoints.new.fail);
+      if(valenceAuth.endpoints.create.fail) {
+        $location.path(valenceAuth.endpoints.create.fail);
       }
     });
   };
 
   /**
-   * NEW
+   * create
    * 
    * @param  {[type]} userData [description]
-   * @description Creates a new Auth active identity.
+   * @description Creates a create Auth active identity.
    */
-  Auth.prototype.new = function(userData) {
+  Auth.prototype.create = function(userData) {
     var self = this;
 
     if(userData) {
-     return $http({method:valenceAuth.endpoints.new.method, url: valenceAuth.endpoints.new.URL, data:userData}).success(function(data, status) {
-        if(valenceAuth.endpoints.new.validateOnNew) {
+     return $http({method:valenceAuth.endpoints.create.method, url: valenceAuth.endpoints.create.URL, data:userData}).success(function(data, status) {
+        if(valenceAuth.endpoints.create.validateOncreate) {
           self.postFlow({isValidated: true, setToken:data[self.scheme.name], setIdentity: data.user});
         }
 
-        if(valenceAuth.endpoints.new.success) {
-          $location.path(valenceAuth.endpoints.new.success);
+        if(valenceAuth.endpoints.create.success) {
+          $location.path(valenceAuth.endpoints.create.success);
         }
       }).error(function(data) {
         return data;
@@ -325,7 +329,7 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
       }
     }
 
-    // Reassign new queue to existing one.
+    // Reassign create queue to existing one.
     onceAuthedQueue = tmp;
     return;
   };
