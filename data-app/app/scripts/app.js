@@ -17,8 +17,6 @@ app.config(function ($routeProvider, valenceProvider, valenceAuthProvider, $sceP
   
   valenceProvider.storageEngine = {primary: 'localStorage', fallbackToMemory: true};
 
-  valenceAuthProvider.dataStore = window.valence.store;
-
   valenceAuthProvider.endpoints = {
     login: {
       URL: 'http://localhost:9001/session',
@@ -35,7 +33,7 @@ app.config(function ($routeProvider, valenceProvider, valenceAuthProvider, $sceP
       URL: 'http://localhost:9001/session',
       method: 'GET'
     },
-    new: {
+    create: {
       URL: 'http://localhost:9001/users',
       method: 'POST',
       success: '/',
