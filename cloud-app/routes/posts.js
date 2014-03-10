@@ -83,5 +83,5 @@ exports.initRoute = function(app, Posts, auth) {
   });
 
   // Inserts a lot of test data;
-  // Posts.insertPosts();
+  Posts.insertPosts();
 };

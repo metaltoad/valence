@@ -6,7 +6,7 @@
  */
 
 exports.initRoute = function(app, User, Auth) {
-
+  
   app.get('/users', function(req, res, next) {
     User.getUsers(req.query._id, function(err, user) {
       if(err) return res.send(404, err);
