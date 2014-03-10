@@ -11,5 +11,6 @@ valence.model('posts', {
   },
   HTTP: {
     PUT: {url: 'posts', params: {post_id: 'post_id'}}
-  }
+  },
+  localize:false
 });

@@ -18,7 +18,12 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
   var Auth = function(arg) {
     
     // Total short circuit
-    if(!valenceAuth.enabled) {
+    if(valenceAuth.enabled !== false) {
+      // Explicitly set to true so that the
+      // route hook can work.
+      valenceAuth.enabled = true;
+    } else {
+      // it does === false: short circuit
       return;
     }
 
@@ -149,7 +154,7 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
     var self = this;
     $http({method:valenceAuth.endpoints.logout.method, url: valenceAuth.endpoints.logout.URL, params: {token:self.getToken()}}).success(function(data, status) {
       if(valenceAuth.endpoints.create.success) {
-        self.postFlow({isValidated: false, setToken: null});
+        self.postFlow({isValidated: false, setToken: null, setIdentity: null});
         $location.path(valenceAuth.endpoints.create.success);
       }
     }).error(function(data) {
@@ -170,7 +175,7 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
 
     if(userData) {
      return $http({method:valenceAuth.endpoints.create.method, url: valenceAuth.endpoints.create.URL, data:userData}).success(function(data, status) {
-        if(valenceAuth.endpoints.create.validateOncreate) {
+        if(valenceAuth.endpoints.create.validateOnCreate) {
           self.postFlow({isValidated: true, setToken:data[self.scheme.name], setIdentity: data.user});
         }
 
@@ -196,7 +201,7 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
         self[prop] = opts[prop];
       }
     }
-
+    console.log('post flow called');
     self.runAuthedQueue(opts.data);
 
     return;
@@ -319,6 +324,7 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
   Auth.prototype.runAuthedQueue = function(data) {
     var tmp = [];
 
+    console.log('auth queue called');
     // Loop through queue and run callbacks
     for(var i=0; i<onceAuthedQueue.length; i++) {
       // run cb
@@ -349,12 +355,12 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
    */
   Auth.prototype.validateRoles = function(route) {
     var def = $q.defer();
-
+    console.log('validate roles called: ', route);
     if(route && route.auth.roles && route.auth.roles.length) {
       for(var i=0; i<route.auth.roles.length; i++) {
         for(var j=0; j<valenceAuth.roles.length; j++) {
           if(route.auth.roles[i] === valenceAuth.roles[j].role) {
-            valenceAuth.roles[j].fn.call(this, def, $routeParams, $route);
+            valenceAuth.roles[j].fn.call(this, def, $routeParams, $route, $location);
           }
         }
       }

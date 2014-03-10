@@ -1,36 +1,28 @@
-valenceAuth.role('author', function(promise, $routeParams, $route) {
+valenceAuth.role('author', function(promise, $routeParams, $route, $location) {
   var self = this,
-      match = false;
-
-  valenceModel.get('users').then(function(users) {
-    var user = null,
-        post = null;
+      post;
     
-    for(var i=0; i<users.length; i++) {
-      if(users[i]._id === self.getIdentity()._id) {
-        user = users[i];
-      }
-    }
-    if(user) {
-      valenceModel.get('posts', {}).then(function(posts) {
-        for(var i=0; i<posts.length; i++) {
-          if(posts[i]._id === $routeParams.post_id) {
-            post = posts[i];
-          }
+    console.log('author role', valenceModel);
+    valenceModel.get('posts', {}).then(function(posts) {
+      console.log('valence get called from posts role');
+      for(var i=0; i<posts.length; i++) {
+        if(posts[i]._id === $routeParams.post_id) {
+          post = posts[i];
         }
+      }
 
-        if(post) {
-          if(post.author_id === user._id) {
-            promise.resolve(user);
-          } else {
-            promise.reject(null);
-          }
+      if(post) {
+        console.log('post: ', post);
+        if(post.author_id === self.getIdentity()._id) {
+          promise.resolve();
         } else {
           promise.reject(null);
         }
-      });
-    } else {
-      promise.reject(null);
-    }
-  });
+      } else {
+        promise.reject(null);
+      }
+    }, function(data) {
+      console.log('author role rejection', data);
+    });
+    
 });

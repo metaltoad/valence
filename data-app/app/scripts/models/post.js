@@ -8,11 +8,7 @@ valence.model('post', {
     model: 'comments',
   },
   fields: {
-    _id: '_id',
-    author: 'author',
-    title: 'title',
-    body: 'body',
-    author_id: 'author_id'
+    post: _model
   },
   HTTP: {
     GET: {url: 'posts', params: ['post_id']}

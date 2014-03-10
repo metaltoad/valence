@@ -1,9 +1,9 @@
 <div>
   <h1>{{title}}</h1>
   <hr/>
-  <p><a href="#/authors/{{author_id}}">{{author}}</a></p>
-  <img ng-src="{{picture}}" alt="">
-  <p>{{body}}</p>
+  <p><a href="#/authors/{{post.author_id}}">{{author}}</a></p>
+  <img ng-src="{{post.picture}}" alt="">
+  <p>{{post.body}}</p>
 </div>
 <div>
   <a ng-href="#{{edit}}">edit</a>

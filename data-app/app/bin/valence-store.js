@@ -28,12 +28,16 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
      * @return {[type]}       [description]
      */
     get: function(model) {
-      var store = JSON.parse(window.localStorage.valenceStore),
+      var store = (window.localStorage.valenceStore)? JSON.parse(window.localStorage.valenceStore) : {},
           data;
 
       // Get store data if there.
       if(store.hasOwnProperty(model)) {
-        data = store[model];
+        if(store[model].constructor === Object && Object.keys(store[model]).length) {
+          data = store[model];
+        } else if(store[model].constructor === Array && store[model].length) {
+          data = store[model];
+        }
       }
 
       return data;
@@ -45,7 +49,7 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
      * @param {[type]} data  [description]
      */
     set: function(model, data) {
-      var store = JSON.parse(window.localStorage.valenceStore);
+      var store = (window.localStorage.valenceStore)? JSON.parse(window.localStorage.valenceStore) : {};
 
       store[model] = data;
 
@@ -53,8 +57,14 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
 
       return this.get(model);
     },
+    /**
+     * REMOVE
+     * 
+     * @param  {[type]} model [description]
+     * @return {[type]}       [description]
+     */
     remove: function(model) {
-      var store = JSON.parse(window.localStorage.valenceStore);
+      var store = (window.localStorage.valenceStore)? JSON.parse(window.localStorage.valenceStore) : {};
 
       // Get store data if there.
       if(store.hasOwnProperty(model)) {
@@ -80,8 +90,12 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
       : (valence.storageEngine && valence.storageEngine.fallbackToMemory)? 'memory' : (window.localStorage)? 'localStorage': [];
 
     // Create default LS space.
-    if(this.store === 'localStorage' && window.localStorage.valenceStore === undefined) {
-      window.localStorage.valenceStore = JSON.stringify({});
+    if(this.store === 'localStorage') {
+      if(valence.storageEngine.fetchOnReload) {
+        window.localStorage.valenceStore = JSON.stringify({});
+      } else if(window.localStorage.valenceStore === undefined) {
+        window.localStorage.valenceStore = JSON.stringify({});
+      }
     }
 
     // Globalize it while debugging
@@ -102,9 +116,18 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
         mLen = 0,
         result;
 
+
+    // Localization or restoration controls
+    // These api properties allow a user to prevent data from being localy stored
+    // or to force an update from the cloud by simply rejecting the promise. Forcing
+    // the next step in the getter flow to fetch from cloud
+    if(opts && opts.localize === false || opts.forceFetch === true) {
+      def.reject();
+    }
+    
     // Fail early and harrrrd.
     if(!data) {
-      def.reject(false)
+      def.reject()
     } else {
       // if no query provided, it should be a straight 1:1 thing.
       if(!query) {
@@ -183,21 +206,28 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
 
   /**
    * SET MODEL
+   * 
    * @param {[type]} model [description]
    * @param {[type]} data  [description]
    */
-  Store.prototype.setModel = function(model, data) {
+  Store.prototype.setModel = function(model, data, opts) {
     var def = $q.defer(),
         res;
 
-    // Check the store for the current model
-    res = Adapters[this.store].set(model, data);
-    console.log(res);
-    if(res) {
-      console.log('resolving');
-      def.resolve(res);
+    // Resolve the promise right away if localized is
+    // set to false
+    if(opts && opts.localize === false) {
+      console.log(model, opts, data);
+      def.resolve(data);
     } else {
-      def.reject(false);
+      // Check the store for the current model
+      res = Adapters[this.store].set(model, data);
+      
+      if(res) {
+        def.resolve(res);
+      } else {
+        def.reject(false);
+      }
     }
 
     // Return promise
@@ -206,6 +236,7 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
 
   /**
    * DELETE MODEL
+   * 
    * @param  {[type]} model [description]
    * @return {[type]}       [description]
    */

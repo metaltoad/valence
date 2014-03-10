@@ -17,7 +17,7 @@ body {
   margin: 0 auto;
   font-family: "Helvetica Neue";
   font-weight: 100;
-  overflow: none;
+  overflow: hidden;
 }
 
 #bg-wrapper {
@@ -30,6 +30,11 @@ body {
 }
 
 /* defaults */
+h1, h2, h3, h4, h5, h6 {
+  margin:0;
+  padding:0;
+}
+
 a {
   text-decoration: none;
   color: #CCC;
@@ -125,6 +130,51 @@ section p {
 .container #main h1 {
   font-size: 1.4rem;
   margin-bottom: 0;
+}
+
+#main {
+  height: 100%;
+}
+
+#main>section {
+  width:100%;
+  height: 100%;
+  display: block;
+}
+
+#main>section>section {
+  display: table;
+  height: 100%;
+  text-align: center;
+  width:100%;
+}
+
+#main>section>section>section {
+  display: table-cell;
+  vertical-align: middle;
+  width:100%;
+}
+
+#main section ul li {
+  list-style-type: disc;
+  font-size: 1.6rem;
+  text-align: left;
+}
+
+.slide-left, .slide-right {
+  display: inline-block;
+  height: 100%;
+  margin: 10% 5%;
+}
+
+.slide-left {
+  width: 42%;
+  height:267px;
+  background-color: black;
+}
+
+.slide-right {
+  width: 40%;
 }
 
 #main header h1 {

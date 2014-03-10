@@ -10,12 +10,14 @@
  */
 valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$rootScope', '$location', '$rootElement', '$q', '$routeParams',
   function(valence, cloud, store, loader, $route, $rootScope, $location, $rootElement, $q, $routeParams) {
+
   //
   // UTILITY FUNCTIONS
   //------------------------------------------------------------------------------------------//
   
   /**
    * SAFE APPLY
+   * 
    * @param  {[type]}   scope [description]
    * @param  {Function} fn    [description]
    * @description queues up a $scope.apply
@@ -29,11 +31,13 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
         clearInterval(applier);
         scope.$apply(fn);
       }
+      console.log('apply timer');
     }, 100);
   };
 
   /**
    * SPLIT AND STRIP
+   * 
    * @param  {[type]} obj [description]
    * @return {[type]}     [description]
    */
@@ -53,6 +57,7 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
 
   /**
    * GET ROUTE PARAMS
+   * 
    * @return {[type]} [description]
    */
   function getRouteParams() {
@@ -81,6 +86,8 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
    * @description Serves as the service entry point for working with models. At this point it
    *              does nothing more than give us a prototype chain and perform some basic,
    *              global-to-models error handling.
+   *
+   * @TODO Actually architect this thing instead of all this procedural bullshit.
    */
   var Model = function() {
     // do stuff like check if ngModels has anything in it.
@@ -113,11 +120,11 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
             belongsTo = false,
             hasMany = false,
             standAlone,
+            serializePromise = $q.defer(),
             query;
 
-        if(!opts) {
-          opts = Model.fn.getModelConfig(model);
-        }
+        
+        opts = Model.fn.getModelConfig(model, opts);
 
         // Force bool
         belongsTo = !!opts.belongsTo;
@@ -130,8 +137,13 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
           return this.init(opts.belongsTo.model, null, promise);
         } else {
           // Build query
-          query = Model.fn.buildParamQuery(opts);
-          
+          if(opts.HTTP && opts.HTTP.GET) {
+            query = Model.fn.buildParamQuery(opts.HTTP.GET);
+          } else {
+            query = Model.fn.buildParamQuery(opts);
+          }
+
+          // First pass at getting from store.
           store.getModel(model, opts, query).then(function(storeGetData) {
             if(hasMany && !standAlone) {
               // loader.loaded(model);
@@ -141,23 +153,39 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
               apply(model, opts, storeGetData, promise);
             }
           }, function(storeGetData) {
+            console.log(model);
             // Data not found in store, query cloud
             cloud.fetchModel(model, opts, query).then(function(cloudGetData) {
               // Save to store.
+              // TODO make sure to do this wherever store.getModel is called
               if(opts.serializer) {
-                cloudGetData = opts.serializer(cloudGetData);
+                opts.serializer(cloudGetData, serializePromise).then(function(serializeData) {
+                  store.setModel(model, serializeData, opts).then(function(storeSaveData) {
+                    if(hasMany && !standAlone) {
+                      // loader.loaded(model);
+                      apply(model, opts, storeSaveData);
+                      self.hasMany(model, opts.hasMany.model, null, promise);
+                    } else {
+                      apply(model, opts, storeSaveData, promise);
+                    }
+                  }, function(storeSaveData) {
+                    // Could not save to store, promise rejected
+                    // 
+                  })
+                });
+              } else {
+                store.setModel(model, cloudGetData, opts).then(function(storeSaveData) {
+                  if(hasMany && !standAlone) {
+                    // loader.loaded(model);
+                    apply(model, opts, storeSaveData);
+                    self.hasMany(model, opts.hasMany.model, null, promise);
+                  } else {
+                    apply(model, opts, storeSaveData, promise);
+                  }
+                }, function(storeSaveData) {
+                  // Could not save to store, reject promise
+                })
               }
-              store.setModel(model, cloudGetData).then(function(storeSaveData) {
-                if(hasMany && !standAlone) {
-                  // loader.loaded(model);
-                  apply(model, opts, storeSaveData);
-                  self.hasMany(model, opts.hasMany.model, null, promise);
-                } else {
-                  apply(model, opts, storeSaveData, promise);
-                }
-              }, function(storeSaveData) {
-                // Could not save to store, reject promise
-              })
             }, function(cloudGetData) {
               // cloud rejected, SOL.
             });
@@ -203,7 +231,7 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
               // TODO: TEST hasMany SERIALIZATION
               // if(opts.serializer) {storeGetFromParentData = opts.serializer(cloudGetData)}
               // Now save that data to the store.
-              store.setModel(model, storeGetFromParentData).then(function(storeSetFromParentData) {
+              store.setModel(model, storeGetFromParentData, opts).then(function(storeSetFromParentData) {
                 if(hasMany) {
                   apply(model, opts, storeSetFromParentData);
                   self.hasMany(model, opts.hasMany.model, null, promise)
@@ -219,7 +247,7 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
               cloud.fetchModel(model, opts, query).then(function(cloudGetData) {
                 if(opts.serializer) {cloudGetData = opts.serializer(cloudGetData);}
                 // Success! Save to store
-                store.setModel(model, cloudGetData).then(function(storeSaveData) {
+                store.setModel(model, cloudGetData, opts).then(function(storeSaveData) {
                   if(hasMany) {
                     apply(model, opts, storeSaveData);
                     self.hasMany(model, opts.hasMany.model, null, promise);
@@ -251,7 +279,7 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
                 // Serialize
                 if(opts.serializer) {cloudGetData = opts.serializer(cloudGetData)}
                 // Save to store
-                store.setModel(model, cloudGetData).then(function(storeSaveData) {
+                store.setModel(model, cloudGetData, opts).then(function(storeSaveData) {
                   if(hasMany) {
                     apply(model, opts, storeSaveData)
                     self.hasMany(opts.hasMany.model, null, promise);
@@ -334,6 +362,7 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
         query = Model.fn.buildParamQuery(opts.HTTP[action.toUpperCase()]);
 
         cloud.saveModel(model, action, opts, query, data).then(function(cloudSaveData) {
+          console.log(cloudSaveData);
           // now call get on the whole thing
           cloud.fetchModel(model, opts, Model.fn.buildParamQuery(opts.HTTP.GET)).then(function(cloudGetData) {
             store.setModel(model, cloudGetData).then(function(storeSaveData) {
@@ -365,7 +394,7 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
      * @param  {[type]} model [description]
      * @return {[type]}       [description]
      */
-    getModelConfig: function(model) {
+    getModelConfig: function(model, opts) {
       var config;
 
       for(var i=0; i<valence.models.length; i++) {
@@ -374,7 +403,14 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
         }
       }
 
-      if(!config) throw 'Valence - model for ['+model+'] not found. Make sure to declare one through valence.model()';
+      if(!config && opts) {
+        return config = opts;
+      } else if(!config && !opts) {
+        throw 'Valence - model for ['+model+'] not found. Make sure to declare one through valence.model()';
+      }
+
+      (opts)? config = Model.fn.merge(config, opts) : '';
+
       return config;
     },
     /**
@@ -386,7 +422,7 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
     buildParamQuery: function(opts) {
       var query = {},
           predicate;
-
+          
       if(opts) {
         if(opts.by) {
           predicate = ['by'];
@@ -403,17 +439,42 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
         // Returns structured query
         for(var i=0; i<predicate.length; i++) {
           for(var param in opts[predicate[i]]) {
+            console.log(opts[predicate[i]], param);
+            if(!query[predicate[i]]) {query[predicate[i]] = {}}
             if($routeParams[param]) {
-              if(!query[predicate[i]]) {
-                query[predicate[i]] = {};
-              }
               query[predicate[i]][opts[predicate[i]][param]] = $routeParams[param];
+            } else if(opts.useRouteParams === false) {
+              query[predicate[i]][param] = opts[predicate[i]][param];
             }
           }
         }
       }
 
       return (Object.keys(query).length)? query : false;
+    },
+    /**
+     * MERGE 
+     * 
+     * @param  {[type]} src [description]
+     * @param  {[type]} ext [description]
+     * @return {[type]}     [description]
+     */
+    merge: function(src, ext) {
+      for (var p in ext) {
+        try {
+          // Property in destination object set; update its value.
+          if ( ext[p].constructor === Object ) {
+            src[p] = Model.fn.merge(src[p], ext[p]);
+          } else {
+            src[p] = ext[p];
+          }
+        } catch(e) {
+          // Property in destination object not set; create it and set its value.
+          src[p] = ext[p];
+        }
+      }
+
+      return src;
     }
   };
 
@@ -583,10 +644,10 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
               safeApply(scope);
               loader.loaded(model);
             } else {
-              console.warn('valence - a model $apply was attempted but none of the provided fields were found in scope [$id: '+scope.$id+'], meaning we do not really know what scope to apply the model to.');
+              // console.warn('valence - a model $apply was attempted but none of the provided fields were found in scope [$id: '+scope.$id+'], meaning we do not really know what scope to apply the model to.');
             }
           } else {
-            console.warn('valence - Make sure your Model declaration has a [fields] property with the field names as keys for items in scope that are to receive model data.');
+            // console.warn('valence - Make sure your Model declaration has a [fields] property with the field names as keys for items in scope that are to receive model data.');
           }
         }
       }
@@ -690,6 +751,15 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
   // ROUTE HOOKS
   //------------------------------------------------------------------------------------------//
 
+  /**
+   * LOAD VIEW MODEL
+   *
+   * @description  For models injected in the config section in $routeProvider
+   *               delcarations, this analyzes the current route and assess whether
+   *               or not a model needs to be loaded.
+   * @param  {[type]} scope [description]
+   * @return {[type]}       [description]
+   */
   function loadViewModel(scope) {
     var urlSegs = splitAndStrip($location.path()),
         routeMached = false,

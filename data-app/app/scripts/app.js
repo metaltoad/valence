@@ -37,7 +37,7 @@ app.config(function ($routeProvider, valenceProvider, valenceAuthProvider, $sceP
       URL: 'http://localhost:9001/users',
       method: 'POST',
       success: '/',
-      validateOnNew: true
+      validateOnCreate: true
     }
   };
 
@@ -47,7 +47,7 @@ app.config(function ($routeProvider, valenceProvider, valenceAuthProvider, $sceP
     }
   };
 
-  // valenceAuthProvider.authEvery = true;
+  valenceAuthProvider.authEvery = true;
 
   $routeProvider
     .when('/', {

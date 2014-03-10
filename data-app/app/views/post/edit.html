@@ -1,6 +1,6 @@
-<h1>{{title}}</h1>
+<h1>{{post.title}}</h1>
 <form>
-  <input type="text" ng-model="title">
-  <textarea ng-model="body"></textarea>
-  <input type="submit" name="" value="save" ng-click="updatePost({title: title, body: body}, _id)">
+  <input type="text" ng-model="post.title">
+  <textarea ng-model="post.body"></textarea>
+  <input type="submit" name="" value="save" ng-click="updatePost({title: post.title, body: post.body}, post._id)">
 </form>
