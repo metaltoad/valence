@@ -1,12 +1,42 @@
 // 'use strict';
 
 /***********************************************************************************************************************************************
- * ANGULAR DATA - MODEL
+ * VALENCE - MODEL
  ***********************************************************************************************************************************************
  * @description On page-load/navigation:
  *
- * 1. analyze the current route, see if route has model property.
- * 2. 
+ * @REFACTOR  (yeah I make my own doc tags so what)
+ *            The goal here is to refactor the model core in a way the utilizes the strategy pattern
+ *            and a queueing system for requests. The core challenge here will be relationship parsing.
+ *            The current model uses recursion to find a model's parent if present. Once found it then
+ *            parses child models. The problem with this model is when a model needs to be fetched that is standalone
+ *            in its data needs it proceeds to fetch child models even though they are irrelevant in that
+ *            specific view.
+ *
+ *            Right now, relationships are parsed but models are stored separately. Which doens't really make sense.
+ *            If relationships are parsed then objects should be mutated to be the tree that matches the whole data set.
+ *            The challenge here is modeling the data to be easily parseable: 
+ *
+ *              The comments model belongs to the post model which belongs to the posts model.
+ *              The issue with constructing trees like that are: post isn't actually a thing it is an object that is in
+ *              an index of the posts array, while comments can actually be an injected property within the post object.
+ *              Since both are specified as belongsTo, how do you diffrentiate objects that don't have explicit naming?
+ *
+ *              The alternative, or another option is to not let lists be a 'thing' that you can fetch, but rather extend the
+ *              thing, like 'post' to say: model.get('post').all(); to indicate, that this thing can be a part of a list.
+ *              Then maybe for child objects that could also tehcnically be a list: model.get('post').comments();
+ *
+ *            The other option is to ignore predetermined relatioships by doing an 'on demand' system as opposed to relational binding
+ *            that simply pulls in another model when asked for and assigns that model's data to the corresponding fields on the scope.
+ *            This complicates though when loading models by data via another model when not explicitly called. This was solved by the original
+ *            'URL driven' approach that used by: {route_param: data_field}. That approach is limiting in that you can't make custom queries
+ *            without using $routeParams. URL driven turned into URL coupled. The above delimma really only applies to 'view models' as on load it's extremely
+ *            easy to call .get() on the fly.
+ *
+ *            The on-demand system however begs the question: 'why even bother formalizing the notion of a view model in angular!??' 
+ *
+ *            It seems as though Ember is successful with treating all models this way because the view loading hierarchy has been engineered for this purpose.
+ *            
  */
 valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$rootScope', '$location', '$rootElement', '$q', '$routeParams',
   function(valence, cloud, store, loader, $route, $rootScope, $location, $rootElement, $q, $routeParams) {
