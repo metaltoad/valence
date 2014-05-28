@@ -1,19 +1,26 @@
 app.directive('datanav', function($compile) {
   return {
-    scope: true,
+    scope: false,
     restrict: 'E',
     templateUrl: '/scripts/directives/templates/nav.html',
-    controller: function($scope, $element, $attrs, auth, $rootElement, $rootScope) {
+    controller: function($scope, $element, $attrs, auth, $rootElement, $rootScope, model) {
 
-      $scope.currentUser = (auth.getIdentity()) ? auth.getIdentity().name : '';
+      $scope.getNavTemplate = function() {
+        return 'http://localhost:9000/scripts/directives/templates/' + ((auth.isValidated)? 'logged-in_nav.html' : 'logged-out_nav.html');
+      };
 
-      $scope.getNavTemplate = 'http://localhost:9000/scripts/directives/templates/' + ((auth.isValidated)? 'logged-in_nav.html' : 'logged-out_nav.html');
-      
-      auth.onceAuthed(function() {
-        $compile($element)($scope);
-      })
+      // This catched page load
+      auth.validate().then(function(data) {
+        model.get('user').then(function(user) {
+          $rootScope.currentUser = user;
+        });
+      });
 
-      $scope.auth = auth;
+      $scope.logout = function() {
+        auth.logout().then(function(data) {
+          $scope.user = {};
+        });
+      }
     }
   }
 });

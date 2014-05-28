@@ -32,12 +32,6 @@ app.config(function ($routeProvider, valenceProvider, valenceAuthProvider, $sceP
     validate: {
       URL: 'http://localhost:9001/session',
       method: 'GET'
-    },
-    create: {
-      URL: 'http://localhost:9001/users',
-      method: 'POST',
-      success: '/',
-      validateOnCreate: true
     }
   };
 
@@ -46,8 +40,6 @@ app.config(function ($routeProvider, valenceProvider, valenceAuthProvider, $sceP
       withCredentials: true,
     }
   };
-
-  valenceAuthProvider.authEvery = true;
 
   $routeProvider
     .when('/', {

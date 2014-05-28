@@ -1,9 +1,14 @@
 valence.model('users', {
-  fields: {
-    user: _model
-  },
-  hasMany: {
-  	model: 'authors'
-  },
-  standAlone: 'blog/:post_id/edit'
+  localize:false,
+  normalize: function(data, args, q) {
+    var def = q.defer(),
+      obj = data;
+
+    if(args.action === "POST") {
+      obj = data[0]
+    }
+
+    def.resolve(obj);
+    return def.promise;
+  }
 })

@@ -10,9 +10,7 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
 
   var Service;
 
-  // Private 
-  var onceAuthedQueue = [];
-
+  // Private Members
   var currentRoles = [];
 
   var Auth = function(arg) {
@@ -65,6 +63,9 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
     // If the user specifyies teh token to live only in App memory,
     this.token = null;
 
+    // Validation promise
+    this.vPromise = $q.defer();
+
     return this;
   };
 
@@ -79,44 +80,60 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
    */
   Auth.prototype.validate = function(route, redirect) {
     var self = this,
-        token = window.localStorage.token;
+        params = {},
+        header = {},
+        def = $q.defer(),
+        token;
 
-    // set it immediately to avoid extra http overhead
-    $http({method:valenceAuth.endpoints.validate.method, url: valenceAuth.endpoints.validate.URL, withCredentials: true, params: {token: token}}).success(function(data) {
+
+
+    // Set auth header if it's not there and is in storage
+    if(self.getToken() && !$http.defaults.headers.common.Authorization) {
+      $http.defaults.headers.common['Authorization'] = 'Bearer ' +self.getToken();
+    }
+
+    $http({method:valenceAuth.endpoints.validate.method, url: valenceAuth.endpoints.validate.URL, withCredentials: true}).success(function(data) {
+
+      def.resolve(data);
 
       // Check roles.
-      if(route.auth && route.auth.roles) {
-        self.validateRoles(route).then(function(roleData) {
-          self.postFlow({isValidated: true, setIdentity:data});
-          // Role critieria met, run success redirect
-          // if present
-          if(redirect && redirect.roles.success) {
-            $location.path(redirect.roles.success);
+      if(route) {
+        if(route.auth && route.auth.roles) {
+          self.validateRoles(route).then(function(roleData) {
+            self.postFlow({isValidated: true});
+            // Role critieria met, run success redirect
+            // if present
+            if(redirect && redirect.roles.success) {
+              $location.path(redirect.roles.success);
+            }
+          }, function(data) {
+            // Role criteria not met, run fail redirect
+            // if present.
+            if(redirect && redirect.roles.fail) {
+              $location.path(redirect.roles.fail); 
+            }
+          });
+        } else {
+          self.postFlow({isValidated: true});
+          // No roles present for this auth
+          // run success rediect if present.
+          if(redirect && redirect.auth.success) {
+            $location.path(redirect.auth.success);
           }
-        }, function(data) {
-          // Role criteria not met, run fail redirect
-          // if present.
-          if(redirect && redirect.roles.fail) {
-            $location.path(redirect.roles.fail); 
-          }
-        });
-      } else {
-        self.postFlow({isValidated: true, setIdentity:data});
-        // No roles present for this auth
-        // run success rediect if present.
-        if(redirect && redirect.auth.success) {
-          $location.path(redirect.auth.success);
         }
       }
+    
     }).error(function(data) {
-      self.postFlow({isValidated: false, setIdentity:null});
+
+      def.reject(data);
+      self.postFlow({isValidated: false});
       // Auth failed, run fail redirect if present.
       if(redirect && redirect.auth.fail) {
         $location.path(redirect.auth.fail);
       }
     });
 
-    return;
+    return def.promise;
   };
 
   /**
@@ -126,23 +143,31 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
    * @description valenceAuth's stock login function. Runs off provider config.
    */
   Auth.prototype.login = function(userData) {
-    var self = this;
+    var self = this,
+        def = $q.defer();;
+
     if(userData) {
-      $http({method:valenceAuth.endpoints.login.method, url: valenceAuth.endpoints.login.URL, data:userData}).success(function(data) {
+      $http({method:valenceAuth.endpoints.login.method, url: valenceAuth.endpoints.login.URL, data:userData}).success(function(data, status, headers, config) {
+        
         var token = (data[self.scheme.name])? data[self.scheme.name] : '';
+
         var identity = (data[self.scheme.identity]);
 
-        self.postFlow({isValidated: true, setToken:token, setIdentity: identity});
-        // calling parse routes will simply get the identity set for us.
-        self.parseRoutes(true);
-        $location.path(valenceAuth.endpoints.create.success);
+        self.postFlow({isValidated: true, setToken:token});
+        
+        def.resolve(self);
+
+        
       }).error(function(data) {
         self.postFlow({isValidated: false, setToken:null});
-        $location.path(valenceAuth.endpoints.create.fail);
+        
+        def.reject(self);
       });
     } else {
-      throw "valenceAuth - you must provide credentials to this method."
+      throw "valenceAuth - you must provide credentials to this method [login]."
     }
+
+    return def.promise;
   };
 
   /**
@@ -151,41 +176,15 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
    * @description valenceAuth's stock logout function. Currently only support token based auth
    */
   Auth.prototype.logout = function() {
-    var self = this;
-    $http({method:valenceAuth.endpoints.logout.method, url: valenceAuth.endpoints.logout.URL, params: {token:self.getToken()}}).success(function(data, status) {
-      if(valenceAuth.endpoints.create.success) {
-        self.postFlow({isValidated: false, setToken: null, setIdentity: null});
-        $location.path(valenceAuth.endpoints.create.success);
-      }
-    }).error(function(data) {
-      if(valenceAuth.endpoints.create.fail) {
-        $location.path(valenceAuth.endpoints.create.fail);
-      }
-    });
-  };
+    var self = this,
+        def = $q.defer();
 
-  /**
-   * create
-   * 
-   * @param  {[type]} userData [description]
-   * @description Creates a create Auth active identity.
-   */
-  Auth.prototype.create = function(userData) {
-    var self = this;
+    self.postFlow({isValidated: false, setToken: null});
+    $location.path(valenceAuth.endpoints.logout.success);
 
-    if(userData) {
-     return $http({method:valenceAuth.endpoints.create.method, url: valenceAuth.endpoints.create.URL, data:userData}).success(function(data, status) {
-        if(valenceAuth.endpoints.create.validateOnCreate) {
-          self.postFlow({isValidated: true, setToken:data[self.scheme.name], setIdentity: data.user});
-        }
+    def.resolve(self);
 
-        if(valenceAuth.endpoints.create.success) {
-          $location.path(valenceAuth.endpoints.create.success);
-        }
-      }).error(function(data) {
-        return data;
-      });
-    }
+    return def.promise;
   };
 
   /**
@@ -201,8 +200,6 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
         self[prop] = opts[prop];
       }
     }
-    console.log('post flow called');
-    self.runAuthedQueue(opts.data);
 
     return;
   };
@@ -214,12 +211,18 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
    * @description Sets Auth token based on auth scheme
    */
   Auth.prototype.setToken = function(token) {
+    var self = this;
+
     if(this.scheme.storage === 'localStorage') {
-      window.localStorage[this.scheme.name] = token;
-    } else if(this.scheme.storage === 'cookie') {
-      // parse cookies, not-written yet.
+      window.localStorage.token = token;
+    } else if(this.scheme.storage === 'sessionStorage') {
+      window.sessionStorage.token = token;
+    }
+
+    if(token) {
+      $http.defaults.headers.common['Authorization'] = 'Bearer ' + self.getToken();
     } else {
-      this.token = token;
+      delete $http.defaults.headers.common['Authorization'];   
     }
   };
 
@@ -233,59 +236,57 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
     var token = null;
 
     if(this.scheme.storage === 'localStorage') {
-      token = window.localStorage[this.scheme.name];
-    } else if(this.scheme.storage === 'cookie') {
-      // parse cookies, not-written yet.
-    } else {
-      token = this.token;
+      token = window.localStorage.token;
+    } else if(this.scheme.storage === 'sessionStorage') {
+      token = window.sessionStorage.token;
     }
 
     return token;
   };
 
-  /**
-   * SET IDENTITY
-   * 
-   * @param {[type]} data User data to save to LS.
-   * @description  Saves authenticated user data to LS as an identity reference.
-   */
-  Auth.prototype.setIdentity = function(data) {
-    if(this.scheme.storage === 'localStorage') {
-      window.localStorage[this.scheme.identity] = JSON.stringify(data);
-    } else if(this.scheme.storage === 'cookie') {
-      // parse cookies, not-written yet.
-    } else {
-      this.identity = data;
-    }
-  };
+  // /**
+  //  * SET IDENTITY
+  //  * 
+  //  * @param {[type]} data User data to save to LS.
+  //  * @description  Saves authenticated user data to LS as an identity reference.
+  //  */
+  // Auth.prototype.setIdentity = function(data) {
+  //   if(this.scheme.storage === 'localStorage') {
+  //     window.localStorage[this.scheme.identity] = JSON.stringify(data);
+  //   } else if(this.scheme.storage === 'cookie') {
+  //     // parse cookies, not-written yet.
+  //   } else {
+  //     this.identity = data;
+  //   }
+  // };
 
-  /**
-   * GET IDENTITY
-   * 
-   * @return {Object} Empty object or the parsed localStorage identity object.
-   */
-  Auth.prototype.getIdentity = function() {
-    var identity = null;
+  // *
+  //  * GET IDENTITY
+  //  * 
+  //  * @return {Object} Empty object or the parsed localStorage identity object.
+   
+  // Auth.prototype.getIdentity = function() {
+  //   var identity = null;
 
-    if(this.scheme.storage === 'localStorage') {
-      if(!window.localStorage[this.scheme.identity]) {
-        window.localStorage[this.scheme.identity] = JSON.stringify({});
-      }
-      identity = JSON.parse(window.localStorage[this.scheme.identity]);
-    } else if(this.scheme.storage === 'cookie') {
-      // parse cookies, not-written yet.
-    } else {
-      identity = this.identity;
-    }
+  //   if(this.scheme.storage === 'localStorage') {
+  //     if(!window.localStorage[this.scheme.identity]) {
+  //       window.localStorage[this.scheme.identity] = JSON.stringify({});
+  //     }
+  //     identity = JSON.parse(window.localStorage[this.scheme.identity]);
+  //   } else if(this.scheme.storage === 'cookie') {
+  //     // parse cookies, not-written yet.
+  //   } else {
+  //     identity = this.identity;
+  //   }
     
-    return identity;
-  };
+  //   return identity;
+  // };
 
   /**
    * GET AUTH PARAMS
    * 
    * @description  the purpose of this function is to provide the model layer
-   * with whatever tokens/data is needed based on the current auth schema.
+   * with whatever tokens/data is needed based on the current auth scheme.
    */
   Auth.prototype.getAuthParams = function() {
     var params;
@@ -303,44 +304,6 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
   };
 
   /**
-   * ONCE AUTHED
-   * 
-   * @param  {Function} fn   [description]
-   * @param  {[type]}   opts [description]
-   * @description Adds a callback to the callback queue.
-   */
-  Auth.prototype.onceAuthed = function(fn, opts) {
-    onceAuthedQueue.push({fn: fn, opts: opts});
-    return;
-  };
-
-  /**
-   * RUN AUTHED QUEUE
-   * 
-   * @param  {[type]} data [description]
-   * @description Executes items in queue, then removes them.
-   * 
-   */
-  Auth.prototype.runAuthedQueue = function(data) {
-    var tmp = [];
-
-    console.log('auth queue called');
-    // Loop through queue and run callbacks
-    for(var i=0; i<onceAuthedQueue.length; i++) {
-      // run cb
-      onceAuthedQueue[i].fn(data);
-      // If set to only run once, remove from queue.
-      if(onceAuthedQueue[i].opts && !onceAuthedQueue[i].opts.runOnce) {
-        tmp.push(onceAuthedQueue[i]);
-      }
-    }
-
-    // Reassign create queue to existing one.
-    onceAuthedQueue = tmp;
-    return;
-  };
-
-  /**
    * VALIDATE ROLES
    *
    * @description  Every time validate is called, we also check for Role validation.
@@ -355,7 +318,7 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
    */
   Auth.prototype.validateRoles = function(route) {
     var def = $q.defer();
-    console.log('validate roles called: ', route);
+    
     if(route && route.auth.roles && route.auth.roles.length) {
       for(var i=0; i<route.auth.roles.length; i++) {
         for(var j=0; j<valenceAuth.roles.length; j++) {
@@ -562,8 +525,7 @@ auth.provider('valenceAuth', function() {
       type: 'token',
       name: 'token',
       identity: 'user',
-      storage: 'localStorage',
-      transmissionMethod: 'query'
+      storage: 'localStorage'
     },
     $get: function() {
       this.roles = valenceAuth.roles;
