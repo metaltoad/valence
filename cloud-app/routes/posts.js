@@ -38,50 +38,44 @@ exports.initRoute = function(app, Posts, auth) {
   /**
    * POST
    */
-  app.post('/posts', function(req, res, next) {
+  app.post('/posts', app.expressJWT({secret: app.secret}), function(req, res, next) {
     var required = ['title', 'body'];
     var failedReqs = [];
     var matchedReqs = 0;
 
-    Auth.authenticate(req, function(err, data) {
-      if(err) return res.send(400, err);
-      for(var i=0; i<required.length; i++) {
-        if(req.body.hasOwnProperty(required[i])) {
-          matchedReqs++;
-        } else {
-          failedReqs.push(require[i]);
-        }
-      }
-
-      if(matchedReqs == required.length) {
-        var postsData = req.body;
-
-        postsData.author_id = data._id;
-
-        Posts.newPost(postsData, function(err, doc) {
-          if(err) res.send(400, 'Could not save post: '+err);
-          res.send(200, doc);
-        });
+    for(var i=0; i<required.length; i++) {
+      if(req.body.hasOwnProperty(required[i])) {
+        matchedReqs++;
       } else {
-        res.send(400, failedReqs);
+        failedReqs.push(require[i]);
       }
-    });
+    }
+
+    if(matchedReqs == required.length) {
+      var postsData = req.body;
+
+      postsData.author_id = req.user._id;
+
+      Posts.newPost(postsData, function(err, doc) {
+        if(err) res.send(400, 'Could not save post: '+err);
+        res.send(200, doc);
+      });
+    } else {
+      res.send(400, failedReqs);
+    }
   });
 
-  app.put('/posts', function(req, res, next) {
+  app.put('/posts', app.expressJWT({secret: app.secret}), function(req, res, next) {
     if(!req.query.post_id) {
       res.send(400, 'Please send the ID of the Post you wish to update.')
     }
 
-    Auth.authenticate(req, function(err, data) {
-      if(err) return res.send(400, err);
-      Posts.updatePost(req.body, req.query.post_id, function(err, post) {
-        if(err) res.send(400, 'Could not update post: '+err);
-        res.send(200, post);
-      });
-    })
+    Posts.updatePost(req.body, req.query.post_id, function(err, post) {
+      if(err) res.send(400, 'Could not update post: '+err);
+      res.send(200, post);
+    });
   });
 
   // Inserts a lot of test data;
-  Posts.insertPosts();
+  // Posts.insertPosts();
 };

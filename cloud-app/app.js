@@ -17,6 +17,8 @@ var Db = require('./Db');
 var utils = require('./utils');
 var flash = require('connect-flash');
 var MongoStore = require('connect-mongostore')(express);
+var expressJWT = require('express-jwt');
+var JWT = require('jsonwebtoken');
 var app = express();
 
 // // Passport config
@@ -38,6 +40,8 @@ app.configure(function(){
   app.use(express.logger());
     app.use(express.cookieParser());
     app.use(express.bodyParser());
+    app.use(express.json());
+    app.use(express.urlencoded());
     // app.use(express.session({ secret: 'angular-data', key: 'connect.sid', store: new MongoStore({'db': 'sessions'}), maxAge: 360*5}));
     // app.use(express.session())
     // app.use(passport.initialize());
@@ -45,6 +49,10 @@ app.configure(function(){
     // app.use(passport.authenticate('remember-me'));
     app.use(app.router);
 });
+
+app.expressJWT = expressJWT;
+app.JWT = JWT;
+app.secret = 'valence';
 
 // Config
 var port = 9001;
@@ -92,7 +100,8 @@ exports.goForLaunch = function(go, err) {
     res.header('Access-Control-Allow-Credentials', true);
     res.header('Access-Control-Allow-Origin', req.headers.origin);
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-    res.header('Access-Control-Allow-Headers', 'X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept');
+    res.header('Access-Control-Allow-Headers', 'X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Expose-Headers', 'X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept, Authorization');
     if ('OPTIONS' == req.method) {
          res.send(200);
      } else {

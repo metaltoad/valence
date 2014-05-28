@@ -7,12 +7,37 @@
 
 exports.initRoute = function(app, User, Auth) {
   
+  /**
+   * /USERS
+   * @param  {[type]}   req  [description]
+   * @param  {[type]}   res  [description]
+   * @param  {Function} next [description]
+   * @return {[type]}        [description]
+   */
   app.get('/users', function(req, res, next) {
     User.getUsers(req.query._id, function(err, user) {
       if(err) return res.send(404, err);
       var obj = {};
       res.send(200, user);
     });
+  });
+
+  /**
+   * /USER
+   * @param  {[type]}   req  [description]
+   * @param  {[type]}   res  [description]
+   * @param  {Function} next [description]
+   * @return {[type]}        [description]
+   */
+  app.get('/user', app.expressJWT({secret:app.secret}), function(req, res, next) {
+    var user = [req.user].map(function(itm, idx) {
+      delete itm.password;
+      delete itm.exp;
+      delete itm.iat;
+      return itm;
+    });
+
+    res.send(200, user);
   });
 
   /**
@@ -39,11 +64,10 @@ exports.initRoute = function(app, User, Auth) {
         if(err) {
           res.send(400, 'Could not add user: ' + err);
         } else if(user !== null && user !== undefined) {
-          // This should probably be wrapped in a config option
-          console.log('auth 37', body);
-          Auth.createSession(body, function(status, msg) {
-            res.send(status, msg);
-          });
+
+          delete user.password;
+
+          res.send(200, user);
         }
       })
     }

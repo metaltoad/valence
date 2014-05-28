@@ -11,6 +11,8 @@
     "password-hash": "~1.2.1",
     "connect-mongostore": "0.0.10",
     "persistent-auth": "0.0.4",
-    "passport-remember-me": "0.0.1"
+    "passport-remember-me": "0.0.1",
+    "express-jwt": "^0.2.1",
+    "jsonwebtoken": "^0.4.0"
   }
 }
