@@ -8,7 +8,7 @@
 var valenceApp = angular.module('valence', ['valenceAuth']);
 
 // Load the model service right off the bat
-valenceApp.run(['model', function(model) {}])
+valenceApp.run(['route', function(route) {}])
 
 /**
  * GLOBAL VALENCE
@@ -27,6 +27,15 @@ window.valence = {};
  * @type {Array}
  */
 valence.models = [];
+
+/**
+ * _MODEL
+ *
+ * @description Valence reserved word that denotes a sertain behavior.
+ * 
+ * @type {String}
+ */
+window._model = "model";
 
 /**
  * VALENCE MODEL
@@ -55,15 +64,3 @@ valence.model = function(model, fields) {
     valence.models.push(obj);
   }
 };
-
-
-/**
- * _MODEL
- *
- * @description API helper when using view models. For example
- *              if the user just wants to assign the entirety of the
- *              products model to $scope.products they would just say:
- *              fields: {products:_model}
- * @type {String}
- */
-window._model = '_model';

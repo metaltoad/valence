@@ -6,7 +6,8 @@
  */
 var auth = angular.module('valenceAuth', []);
 
-auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http', '$routeParams', '$q', function(valenceAuth, $rootScope, $location, $route, $http, $routeParams, $q) {
+auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http', '$routeParams', '$q', 'route', 
+  function(valenceAuth, $rootScope, $location, $route, $http, $routeParams, $q, route) {
 
   var Service;
 
@@ -283,27 +284,6 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
   // };
 
   /**
-   * GET AUTH PARAMS
-   * 
-   * @description  the purpose of this function is to provide the model layer
-   * with whatever tokens/data is needed based on the current auth scheme.
-   */
-  Auth.prototype.getAuthParams = function() {
-    var params;
-
-    if(this.scheme.type === 'oAUth') {
-      // do something
-    }
-
-    if(this.scheme.type === 'token') {
-      params = {};
-      params[this.scheme.name] = this.getToken();
-    }
-
-    return params;
-  };
-
-  /**
    * VALIDATE ROLES
    *
    * @description  Every time validate is called, we also check for Role validation.
@@ -334,166 +314,6 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
     return def.promise;
   };
 
-  /**
-   * PARSE ROUTES
-   * 
-   * @description Parses current route and compares dynamically with $Location to determine the appropriate route object
-   *              to pull config data from.
-   */
-  Auth.prototype.parseRoutes = function(force) {
-    var self = this,
-        urlSegs = this.splitAndStrip($location.path()),
-        routeMached = false,
-        routeSegs,
-        redirect;
-
-    // This service is called way before the $routeParams object is actually populated.
-    // So I've created a promise wrapper for them.
-    this.getRouteParams().then(function(data) {
-      // Loop through each route param object.
-      for(var route in $route.routes) {
-        // The system behind these vars is as follows:
-        // We need to be able to accommodate any URL fashion with segments and params in any order.
-        // to do these we need extensive parsing. We match the param declaration in the route by :,
-        // then we match positions of the non-param segments.
-        // If they all match with what's in the $routeProvider, we can safely assume we're in the right model and can use its config.
-        var paramCounter = 0 ,
-            paramMatchedCounter = 0,
-            paramsPassed = false,
-            uriCounter = 0,
-            uriMatchedCounter = 0,
-            urisPassed = false;
-
-        
-        // Capture routes without params first.
-        // Sever execution if the location and route are a straight match.
-        if(route === $location.path()) {
-          if($route.routes[route].auth || valenceAuth.authEvery || force || self.firstVisit) {
-            if($route.routes[route].auth && $route.routes[route].auth.redirect) {
-              redirect = $route.routes[route].auth.redirect;
-            }
-            self.validate($route.routes[route], redirect);
-          }
-        }
-        
-        // If not, let the parsing begin!
-        // split route declaration in the same fashion as the current URL
-        routeSegs = self.splitAndStrip(route);
-        
-        // We can save cycles here by performing this one-off check.
-        // Else these aren't the routes you're looking for.
-        if(routeSegs.length === urlSegs.length) {
-          // If routeParams actually holds anything.
-          if(data) {
-            // Loop through with route segments.
-            for(var i=0; i<routeSegs.length; i++) {
-              if(routeSegs[i].match(':') !== null) {
-                // comparae with $routeParams
-                for(var param in data) {
-                  paramCounter++;
-                  // if the param holds the same name
-                  if(routeSegs[i].match(param) !== null) {
-                    paramMatchedCounter++;
-                  }
-                }
-              } else {
-                // Current segment is not a param
-                uriCounter++;
-                // if the current segment matched the same index of the URL segment.
-                if(routeSegs[i] === urlSegs[i]) {
-                  uriMatchedCounter++;
-                }
-              }
-            }
-
-            // A note on teh two following blocks:
-            // since we capture param-less routes up top, but initialize our counters to zero,
-            // we must first cehck to see if they've at least been incremented as well as matched
-            // else while 0 is false, 0 === 0 is true.
-            
-            // Param validator
-            if(paramCounter && paramMatchedCounter && paramCounter === paramMatchedCounter) {
-              paramsPassed = true;
-            }
-
-            // URI validator
-            if(uriCounter && uriMatchedCounter && uriCounter === uriMatchedCounter) {
-              urisPassed = true;
-            }
-
-            // if both validated and the route has been matched only once.
-            if(paramsPassed && urisPassed && !routeMached) {
-              // Angular creates two routes for each app.js entry, one with a trailing /
-              // this ensure it will only be run once.
-              routeMached = true;
-              if($route.routes[route].auth || valenceAuth.authEvery || force || self.firstVisit) {
-                if($route.routes[route].auth && $route.routes[route].auth.redirect) {
-                  redirect = $route.routes[route].auth.redirect;
-                }
-                self.validate($route.routes[route], redirect);
-              }
-            }
-          } else {
-            // These are not the routes you are looking for.
-          }
-        }
-      }
-      
-      // No longer first visit.
-      return self.firstVisit = false;
-    });
-  };
-
-  /**
-   * GET PARAMS
-   *
-   * @description Promise wrapper for $routeParams as they are not usually available when this service is instantiated.
-   * @return {Object} Promise object
-   */
-  Auth.prototype.getRouteParams = function() {
-    var def = $q.defer(),
-        elapsed = 0;
-
-    var paramChecker = setInterval(function() {
-      if(Object.keys($routeParams).length) {
-        clearInterval(paramChecker);
-        setTimeout(function() {
-          def.resolve($routeParams);
-        }, 1000 - elapsed)
-      } else {
-        elapsed += 300;
-        // 1000 is totally arbitrary.
-        if(elapsed >= 1000) {
-          clearInterval(paramChecker);
-          def.resolve(null);
-        }
-      }
-    }, 300);
-
-    return def.promise;
-  };
-
-  /**
-   * SPLIT AND STRIP
-   * 
-   * @param  {String} obj String to split
-   * @return {Array} stripped Array of segments after splitting '/'
-   * @description  Make it rain.
-   */
-  Auth.prototype.splitAndStrip = function(obj) {
-    var stripped = [];
-
-    obj = obj.split('/');
-
-    for(var i=0; i<obj.length; i++) {
-      if(obj[i] !== "") {
-        stripped.push(obj[i]);
-      }
-    }
-
-    return stripped;
-  };
-
   // There were some runtime issues behind the need for this that I didn't quite understand.
   this.Auth = new Auth();
   // Global reference not bound to 'this'
@@ -502,10 +322,21 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
   //
   // ROUTE HOOKS
   //------------------------------------------------------------------------------------------//
+  function authHook(key, path) {
+    
+    if(path[key].auth || valenceAuth.authEvery) {
+
+      if(path[key].auth && path[key].auth.redirect) {
+        redirect = path[key].auth.redirect;
+      }
+
+      Service.validate(path[key], redirect);
+    }
+  }
+
+  // Add hook if enabled
   if(valenceAuth.enabled) {
-    $rootScope.$on('$routeChangeSuccess', function() {
-      Service.parseRoutes();
-    });
+    route.addHook(authHook);
   }
 
   return this.Auth;

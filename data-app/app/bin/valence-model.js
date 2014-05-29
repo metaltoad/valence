@@ -38,8 +38,8 @@
  *            It seems as though Ember is successful with treating all models this way because the view loading hierarchy has been engineered for this purpose.
  *            
  */
-valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$rootScope', '$location', '$rootElement', '$q', '$routeParams',
-  function(valence, cloud, store, loader, $route, $rootScope, $location, $rootElement, $q, $routeParams) {
+valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', 'auth', '$route', '$rootScope', '$location', '$rootElement', '$q', '$routeParams', 'route',
+  function(valence, cloud, store, loader, auth, $route, $rootScope, $location, $rootElement, $q, $routeParams, route) {
 
   //
   // UTILITY FUNCTIONS
@@ -780,140 +780,30 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
   //
   // ROUTE HOOKS
   //------------------------------------------------------------------------------------------//
-
-  /**
-   * LOAD VIEW MODEL
-   *
-   * @description  For models injected in the config section in $routeProvider
-   *               delcarations, this analyzes the current route and assess whether
-   *               or not a model needs to be loaded.
-   * @param  {[type]} scope [description]
-   * @return {[type]}       [description]
-   */
-  function loadViewModel(scope) {
-    var urlSegs = splitAndStrip($location.path()),
-        routeMached = false,
-        routeSegs;
-
-    valence.appliedModels = [];
-
-    // Kick off the loader right away
-    loader.run();
-    
-    // Waint until routeParams are available or
-    // we can say there aren't any
-    getRouteParams().then(function(data) {
-      for(var route in $route.routes) {
-        var paramCounter = 0, // How many params exist
-            paramMatchedCounter = 0, // How many params match
-            paramsPassed = false, // Pass fail on params.length vs paramspassed
-            uriCounter = 0, // Number of segments in URI
-            uriMatchedCounter = 0, // Number of segments that match the actual URL
-            urisPassed = false; // If they all matched.
-
-        // Param-less route.
-        if(route === $location.path()) {
-          if($route.routes[route].model) {
-            // Force model declaration to array.
-            if($route.routes[route].model.constructor !==  Array) {
-              $route.routes[route].model = [$route.routes[route].model];
-            }
-            // Loop through models.
-            for(var m=0; m<$route.routes[route].model.length; m++) {
-              for(var i=0; i<valence.models.length; i++) {
-                if(valence.models[i].name === $route.routes[route].model[m]) {
-                  // We have a route and model match!
-                  Model.get(valence.models[i].name, valence.models[i]);
-                }
-              }
-            }
-          } else {
-            // These aren't the routes you're looking for. #jediCodeTrick
-            loader.finish();
-            // route matches location but no model found.
-            return;
-          }
-        }
-
-        // Segment routes
-        routeSegs = splitAndStrip(route);
-        
-        // We can say here that if they aren't
-        // the same length it is not the $route config we want.
-        if(routeSegs.length === urlSegs.length) {
-          // If there are actually $routeParams
-          if(data) {
-            // Begin looping over the route segments.
-            for(var i=0; i<routeSegs.length; i++) {
-              // If there's a : in the 'when' delcaration
-              // we know we need to look for a $routeParam
-              if(routeSegs[i].match(':') !== null) {
-                // Loop through $routeParams
-                for(var param in data) {
-                  // if this hits, we have params, increment the total number counter
-                  paramCounter++;
-                  // Check to see if a match
-                  if(routeSegs[i].match(param) !== null) {
-                    paramMatchedCounter++;
-                  }
-                }
-              } else {
-                // No param, increment the global URI counter
-                uriCounter++;
-                // Check to see if it matches the .when segment
-                if(routeSegs[i] === urlSegs[i]) {
-                  uriMatchedCounter++;
-                }
-              }
-            }
-
-            // As these are initialized to 0, we need to check their truthyness first
-            if(paramCounter && paramMatchedCounter && paramCounter === paramMatchedCounter) {
-              paramsPassed = true;
-            }
-
-            // Same as above
-            if(uriCounter && uriMatchedCounter && uriCounter === uriMatchedCounter) {
-              urisPassed = true;
-            }
-
-            // We have a match!
-            if(paramsPassed && urisPassed && !routeMached) {
-              // Angular creates two routes for each app.js entry, one with a trailing /
-              // this ensure it will only be run once.
-              routeMached = true;
-              // Check to see if a model property exists.
-              if($route.routes[route].model) {
-                // Force model to array
-                if($route.routes[route].model.constructor !==  Array) {
-                  $route.routes[route].model = [$route.routes[route].model];
-                }
-                // Loop through models
-                for(var m=0; m<$route.routes[route].model.length; m++) {
-                  for(var i=0; i<valence.models.length; i++) {
-                    // Start the process for getting the data!
-                    if(valence.models[i].name === $route.routes[route].model[m]) {
-                      Model.get(valence.models[i].name, valence.models[i]);
-                    }
-                  }
-                }
-              }
-            }
+  function modelHook(key, path) {
+    if(path[key].model) {
+      // Force model declaration to array.
+      if(path[key].model.constructor !==  Array) {
+        path[key].model = [path[key].model];
+      }
+      // Loop through models.
+      for(var m=0; m<path[key].model.length; m++) {
+        for(var i=0; i<valence.models.length; i++) {
+          if(valence.models[i].name === path[key].model[m]) {
+            // We have a key and model match!
+            API.get(valence.models[i].name, valence.models[i]);
           }
         }
       }
-
+    } else {
+      // These aren't the keys you're looking for. #jediCodeTrick
       loader.finish();
-    });
-  };
+    }
 
-  //
-  // INIT OPTS
-  //------------------------------------------------------------------------------------------//
+    return;
+  }
 
-  $rootScope.$on('$locationChangeSuccess', function(data) {
-    loadViewModel();
-  });
+  route.addHook(modelHook);
 
-  return new Model();
+  return API;
 }]);
