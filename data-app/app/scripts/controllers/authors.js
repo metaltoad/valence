@@ -1,13 +1,7 @@
-app.controller('AuthorsCtrl', function($scope, model) {
-  $scope.authors = model;
+app.controller('AuthorsCtrl', function($scope, valence) {
 
+  valence.scope('author_posts', $scope);
+  
   $scope.author_posts = [];
 
-  // model.get('post', {belongsTo: {
-  //   model: 'posts',
-  //   type: Collection,
-  //   by: {author_id: 'author_id'}
-  // }}).then(function(data) {
-  //   $scope.posts = data;
-  // });
 });
