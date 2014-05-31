@@ -1,36 +1,41 @@
-app.controller('BlogCtrl', function ($scope, model, $location) {
-    $scope.posts = model;
+app.controller('BlogCtrl', function ($scope, $location, valence) {
 
-    $scope.predicate = '-created';
+  valence.scope('posts', $scope);
 
-    $scope.excerpt = function(text) {
-    	return text.slice(0, 250) + '...';
-    };
+  $scope.posts = [];
 
-    $scope.formatDate = function(date) {
-    	var toDate = new Date(date*1000);
+  $scope.predicate = '-created';
 
-    	var day = (function(date) {
-    		var self;
+  $scope.excerpt = function(text) {
+    if(text) {
+      return text.slice(0, 250) + '...';
+    }
+  };
 
-    		var dayMap = {
-    			0: 'Sunday',
-    			1: 'Monday',
-    			2: 'Tuesday',
-    			3: 'Wednesday',
-    			4: 'Thursday',
-    			5: 'Friday',
-    			6: 'Saturday'
-    		};
+  $scope.formatDate = function(date) {
+  	var toDate = new Date(date*1000);
 
-    		return dayMap[date.getDay()];
+  	var day = (function(date) {
+  		var self;
 
-    	})(toDate)
+  		var dayMap = {
+  			0: 'Sunday',
+  			1: 'Monday',
+  			2: 'Tuesday',
+  			3: 'Wednesday',
+  			4: 'Thursday',
+  			5: 'Friday',
+  			6: 'Saturday'
+  		};
 
- 			var hours = toDate.getHours();
+  		return dayMap[date.getDay()];
 
- 			var minutes = toDate.getMinutes();
+  	})(toDate)
 
- 			return day + ',' +hours + ':' + minutes;
-    };
-  });
+		var hours = toDate.getHours();
+
+		var minutes = toDate.getMinutes();
+
+		return day + ',' +hours + ':' + minutes;
+  };
+});

@@ -4,15 +4,12 @@
  * LOGIN CONTROLLER
  *******************************************************************************************************
  */
-app.controller('LoginCtrl', function($scope, auth, model, $rootScope) {
-  $scope.user = {};
+app.controller('LoginCtrl', function($scope, valence, $rootScope) {
 
-  $scope.login = function(username, password) {
+  $scope.login = function() {
     // update user object on login
-    auth.login($scope.user).then(function(authData) {
-      model.get('user').then(function(user) {
-        $rootScope.currentUser = user;
-      });
+    valence.auth.login($scope.creds).then(function(identity) {
+      $rootScope.identity = identity;
     });
   };
 });

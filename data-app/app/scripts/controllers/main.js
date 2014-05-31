@@ -1,6 +1,6 @@
 'use strict';
 
 
-app.controller('MainCtrl', function ($scope, model) {
-     
+app.controller('MainCtrl', function ($scope, model, $rootScope) {
+  
 });
