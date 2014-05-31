@@ -1,28 +1,18 @@
-valenceAuth.role('author', function(promise, $routeParams, $route, $location) {
+valence.role('author', function(valence, q) {
   var self = this,
+      def = q.defer(),
       post;
-    
-    console.log('author role', valenceModel);
-    valenceModel.get('posts', {}).then(function(posts) {
-      console.log('valence get called from posts role');
-      for(var i=0; i<posts.length; i++) {
-        if(posts[i]._id === $routeParams.post_id) {
-          post = posts[i];
-        }
-      }
-
-      if(post) {
-        console.log('post: ', post);
-        if(post.author_id === self.getIdentity()._id) {
-          promise.resolve();
-        } else {
-          promise.reject(null);
-        }
+   
+  valence.get('post').then(function(post) {
+    valence.acl.getIdentity().then(function(identity) {
+      if(post.author_id === identity._id) {
+        console.log('pass');
+        def.resolve();
       } else {
-        promise.reject(null);
+        def.reject();
       }
-    }, function(data) {
-      console.log('author role rejection', data);
-    });
-    
+    })
+  });
+
+  return def.promise;
 });

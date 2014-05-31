@@ -8,8 +8,5 @@ valence.model('comments', {
   	type: Array,
   	by: {post_id: 'post_id'}
   },
-  fields: {
-    comments: _model
-  },
   type: Array
 });
