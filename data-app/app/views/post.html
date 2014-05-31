@@ -1,20 +1,39 @@
-<div>
-  <h1>{{title}}</h1>
-  <hr/>
-  <p><a href="#/authors/{{post.author_id}}">{{author}}</a></p>
-  <img ng-src="{{post.picture}}" alt="">
-  <p>{{post.body}}</p>
-</div>
-<div>
-  <a ng-href="#{{edit}}">edit</a>
-</div>
-<div id="new-comment">
-  <textarea ng-model="comment"></textarea>
-  <button type="submit" ng-click="saveComment('comments', {body: comment})">Post Comment</button>
-</div>
-<div id="comments">
-  <ul ng-repeat="comment in comments">
-    <li>{{comment.author}}</li>
-    <li>{{comment.date}}</li>
-    <li>{{comment.body}}</li>
+<div id="post" class="blog">
+  <header>
+    <h1>{{post.title.toUpperCase()}} - {{post.author}}</h1>
+    <nav>
+      <ul>
+        <li><a href="#/blog/new" title="">New</a></li>
+        <li><a ng-href="#{{edit}}">Edit</a></li>
+      </ul>
+    </nav>
+  </header>
+  <div class="content">
+    <div class="body">
+      <div class="avatar">
+        <img src="{{post.avatar}}">
+      </div>
+      {{post.body}}
+    </div>
+    <div class="comments">
+      <div class="new-comment">
+        <textarea ng-model="comment"></textarea>
+        <button type="submit" ng-click="saveComment('comments', {body: comment})">Post Comment</button>
+      </div>
+      <div class="list">
+        <header>
+          <h2>Comments</h2>
+        </header>
+
+        <div ng-repeat="comment in comments">
+          <div class="text">{{comment.body}}</div>
+          <ul >
+            <li>{{comment.author}}</li>
+            <li>{{comment.created}}</li>
+            <li ng-click="" class="reply">Reply</li>
+          </ul>
+        </div>
+      </div>
+    </div>  
+  </div>
 </div>

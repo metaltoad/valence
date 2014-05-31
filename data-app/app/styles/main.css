@@ -300,6 +300,51 @@ section p {
 /**
  * BLOG DEMO
  */
+
+.blog > header {
+  position: fixed;
+  width: 97.5%;
+  text-align: left;
+  background-color: #efefef;
+  z-index: 5;
+  border-bottom:3px dotted #ccc;
+  padding: 5px 0;
+  margin: 0 auto;
+}
+
+.blog > header h1 {
+  text-align: left;
+  display: inline-block;
+}
+
+.blog > header nav {
+  text-align: right;
+  float: right;
+  display: inline-block;
+  position: relative;
+  top: 12px;
+}
+
+.blog > header nav li {
+  display: inline-block;
+}
+
+.blog > header nav li a {
+  color: #333;
+  font-size: 1.3em;
+}
+
+.blog > header nav li a:hover {
+  color: #ccc;
+}
+
+.blog {
+  position: relative;
+  top:50px;
+}
+
+
+/* List of blog posts */
 #posts {
   text-align: left;
   width:60%;
@@ -360,4 +405,74 @@ section p {
   width: 100%;
   font-size: .9rem;
   margin-top: .5rem;
+}
+
+/* individual posts */
+#post .body {
+  border-bottom: 1px dashed #ccc;
+  font-size: 1.9em;
+  padding: 10px 0;
+  text-align: left;
+}
+
+.comments {
+  text-align: left;
+  padding: 10px 0;
+}
+
+.comments .new-comment {
+  position: relative;
+}
+
+.comments .new-comment textarea {
+  background-color: #efefef;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  width: 380px;
+  height:120px;
+  outline: none;
+}
+
+.comments .new-comment button {
+  width: 105px;
+  height: 25px;
+  background-color: #ccc;
+  border-bottom-right-radius: 6px;
+  position: relative;
+  top:-10px;
+  right:108px;
+  border:none;
+  color:#333;
+  cursor:pointer;
+  outline:none;
+}
+
+.comments .new-comment button:hover {
+  background-color: #666;
+}
+
+.comments .list {
+
+}
+
+.comments .list .text {
+  font-size: 1.5em;
+}
+
+.comments .list ul {
+  border-top: 1px dashed #ccc;
+  width:40%;
+  text-align: right;
+}
+
+.comments .list ul li {
+  display: inline-block;
+}
+
+.comments .list ul li:not(:last-child):after {
+  content: " | ";
+}
+
+.comments .list ul li.reply {
+  cursor: pointer;
 }
