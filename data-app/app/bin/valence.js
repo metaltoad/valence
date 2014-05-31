@@ -5,10 +5,10 @@
  *******************************************************************************************************
  * @description Angular app declaration.
  */
-var valenceApp = angular.module('valence', ['valenceAuth']);
+var valenceApp = angular.module('valence', []);
 
 // Load the model service right off the bat
-valenceApp.run(['route', function(route) {}])
+valenceApp.run(['route', 'auth', 'acl', 'model', function(route, acl, model) {}])
 
 /**
  * GLOBAL VALENCE
@@ -19,6 +19,11 @@ valenceApp.run(['route', function(route) {}])
  */
 window.valence = {};
 
+//
+// MODELS
+//------------------------------------------------------------------------------------------//
+// @description
+
 /**
  * VAELNCE MODELS
  *
@@ -27,15 +32,6 @@ window.valence = {};
  * @type {Array}
  */
 valence.models = [];
-
-/**
- * _MODEL
- *
- * @description Valence reserved word that denotes a sertain behavior.
- * 
- * @type {String}
- */
-window._model = "model";
 
 /**
  * VALENCE MODEL
@@ -63,4 +59,21 @@ valence.model = function(model, fields) {
 
     valence.models.push(obj);
   }
+};
+
+
+//
+// ROLES
+//------------------------------------------------------------------------------------------//
+// @description
+valence.roles = [];
+
+valence.role = function(role, fn) {
+  for(var i=0;i<valence.roles.length; i++) {
+    if(valence.roles[i].name === role) {
+      throw 'Valence - ACL: You cannot register two or more roles with the same name.'
+    }
+  }
+
+  valence.roles.push({name: role, fn: fn});
 };

@@ -4,74 +4,36 @@
  * ANGULAR AUTH
  *******************************************************************************************************
  */
-var auth = angular.module('valenceAuth', []);
 
-auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http', '$routeParams', '$q', 'route', 
-  function(valenceAuth, $rootScope, $location, $route, $http, $routeParams, $q, route) {
+valenceApp.service('auth', ['valence', '$rootScope', '$location', '$route', '$http', '$routeParams', '$q', 'route', 
+  function(valence, $rootScope, $location, $route, $http, $routeParams, $q, route) {
 
-  var Service;
 
-  // Private Members
-  var currentRoles = [];
+  //
+  // CLASS MEMBERS
+  //------------------------------------------------------------------------------------------//
+  //
+  
+  // If true, auth will occur on every view
+  valence.auth.every = true;
 
-  var Auth = function(arg) {
-    
-    // Total short circuit
-    if(valenceAuth.enabled !== false) {
-      // Explicitly set to true so that the
-      // route hook can work.
-      valenceAuth.enabled = true;
-    } else {
-      // it does === false: short circuit
-      return;
-    }
+  // Flag that hold temporary auth status inbetween validations.
+  valence.auth.isValidated = null;
 
-    //
-    // CONFIG AND ERROR HANDLING
-    //------------------------------------------------------------------------------------------//
-    // @description ensures the Auth module will have everything it needs.
-    if(valenceAuth.endpoints) {
-      if(!valenceAuth.endpoints.validate) {
-        throw "valenceAuth - The Endpoints config item requires a 'validate' property. This is the property we use to validate an identity's active session."  
-      }
-      if(!valenceAuth.endpoints.login) {
-        throw "valenceAuth - The Endpoints config item requires a 'login' property. This is the property we use to create a user auth identity."  
-      }
-      if(!valenceAuth.endpoints.logout) {
-        throw "valenceAuth - The Endpoints config item requires a 'logout' property. This is the property we use to destroy a user auth identity."  
-      }
-    } else {
-      throw "valenceAuth - No endpoints config found. Make sure in your app's .config() you specify $valenceAuthProvider.endpoints = {}"
-    }
+  // Timestamp that prevents execessive validation.
+  valence.auth.lastValidated = null;
 
-    //
-    // CLASS MEMBERS
-    //------------------------------------------------------------------------------------------//
-    this.isValidated = false;
+  // How often auth can be checked
+  valence.auth.validateInterval = 10000;
 
-    // Data store.
-    this.dataStore = valenceAuth.dataStore;
+  // The very first time valence.auth page is loaded, we want to cehck auth
+  valence.auth.firstVisit = true;
 
-    // Roles
-    this.roles = valenceAuth.roles;
+  // Token
+  valence.auth.token = valence.auth.endpoints.validate.name || null;
 
-    // The very first time this page is loaded, we want to cehck auth
-    this.firstVisit = true;
-    
-    // Localize auth scheme
-    this.scheme = valenceAuth.scheme;
-
-    // If the user specifyies teh token to live only in App memory,
-    this.token = null;
-
-    // Validation promise
-    this.vPromise = $q.defer();
-
-    return this;
-  };
-
-  // Add to prototype for early onset lookups.
-  Auth.prototype.scheme = valenceAuth.scheme;
+  // Storage
+  var storage = valence.auth.storage || 'localStorage';
 
   /**
    * VALIDATE
@@ -79,61 +41,67 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
    * @description  Session validator
    * @return {[type]} [description]
    */
-  Auth.prototype.validate = function(route, redirect) {
+  valence.auth.validate = function(route, redirect) {
     var self = this,
         params = {},
         header = {},
         def = $q.defer(),
         token;
-
-
-
-    // Set auth header if it's not there and is in storage
-    if(self.getToken() && !$http.defaults.headers.common.Authorization) {
-      $http.defaults.headers.common['Authorization'] = 'Bearer ' +self.getToken();
-    }
-
-    $http({method:valenceAuth.endpoints.validate.method, url: valenceAuth.endpoints.validate.URL, withCredentials: true}).success(function(data) {
-
-      def.resolve(data);
-
-      // Check roles.
-      if(route) {
-        if(route.auth && route.auth.roles) {
-          self.validateRoles(route).then(function(roleData) {
-            self.postFlow({isValidated: true});
-            // Role critieria met, run success redirect
-            // if present
-            if(redirect && redirect.roles.success) {
-              $location.path(redirect.roles.success);
-            }
-          }, function(data) {
-            // Role criteria not met, run fail redirect
-            // if present.
-            if(redirect && redirect.roles.fail) {
-              $location.path(redirect.roles.fail); 
-            }
-          });
-        } else {
-          self.postFlow({isValidated: true});
-          // No roles present for this auth
-          // run success rediect if present.
-          if(redirect && redirect.auth.success) {
-            $location.path(redirect.auth.success);
-          }
-        }
-      }
     
-    }).error(function(data) {
-
-      def.reject(data);
-      self.postFlow({isValidated: false});
-      // Auth failed, run fail redirect if present.
-      if(redirect && redirect.auth.fail) {
-        $location.path(redirect.auth.fail);
+    // Don't allow validation spams by timeboxing.
+    if(new Date().getTime() - valence.auth.lastValidated > valence.auth.validateInterval || valence.auth.lastValidated === null) {
+      // Set auth header if it's not there and is in storage
+      if(self.getToken() && !$http.defaults.headers.common.authorization) {
+        $http.defaults.headers.common['authorization'] = 'Bearer ' +self.getToken();
       }
-    });
 
+      $http({method:valence.auth.endpoints.validate.method, url: valence.auth.endpoints.validate.URL, withCredentials: true}).success(function(data) {
+        
+        self.postFlow({isValidated: true, lastValidated: new Date().getTime()});
+        
+        valence.acl.getIdentity().then(function(identity) {
+          def.resolve(identity);
+        });
+        
+        if(route) {
+          if(redirect && redirect.success) {
+            $location.path(redirect.success);
+          } 
+        } else {
+          // Catches an edge case that misses redirects.
+          valence.route.parseRoutes(authHook);
+        }
+      
+      }).error(function(data) {
+        
+        if(redirect && redirect.fail) {
+          $location.path(redirect.fail);
+        }
+
+        self.postFlow({isValidated: false, lastValidated: new Date().getTime()});
+        
+        valence.acl.getIdentity().then(function(identity) {
+          def.reject(identity);
+        });
+      });
+    } else {
+
+      if(route) {
+        if(valence.auth.isValidated && redirect && redirect.success) {
+          $location.path(redirect.success);
+        } else if(!valence.auth.isValidated && redirect && redirect.fail) {
+          $location.path(redirect.fail);
+        }
+      } else {
+        // Catches an edge case that misses redirects.
+        return valence.route.parseRoutes(authHook);
+      }
+
+      valence.acl.getIdentity().then(function(identity) {
+        def.reject(identity);
+      });
+    }
+    
     return def.promise;
   };
 
@@ -141,31 +109,40 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
    * LOGIN
    *
    * @param  {[type]} userData [description]
-   * @description valenceAuth's stock login function. Runs off provider config.
+   * @description valence.auth's stock login function. Runs off provider config.
    */
-  Auth.prototype.login = function(userData) {
+  valence.auth.login = function(userData) {
     var self = this,
         def = $q.defer();;
 
     if(userData) {
-      $http({method:valenceAuth.endpoints.login.method, url: valenceAuth.endpoints.login.URL, data:userData}).success(function(data, status, headers, config) {
+      $http({method:valence.auth.endpoints.login.method, url: valence.auth.endpoints.login.URL, data:userData}).success(function(data, status, headers, config) {
         
-        var token = (data[self.scheme.name])? data[self.scheme.name] : '';
-
-        var identity = (data[self.scheme.identity]);
+        var token = (data[valence.auth.token])? data[valence.auth.token] : data;
 
         self.postFlow({isValidated: true, setToken:token});
         
-        def.resolve(self);
+        valence.acl.getIdentity().then(function(identity) {
+          def.resolve(identity);
+        });
 
-        
+        if(valence.auth.endpoints.login.success) {
+          $location.path(valence.auth.endpoints.login.success);
+        }
       }).error(function(data) {
+        
         self.postFlow({isValidated: false, setToken:null});
         
-        def.reject(self);
+        valence.acl.getIdentity().then(function(identity) {
+          def.resolve(identity);
+        });
+
+        if(valence.auth.endpoints.login.fail) {
+          $location.path(valence.auth.endpoints.fail);
+        }
       });
     } else {
-      throw "valenceAuth - you must provide credentials to this method [login]."
+      throw "Valence - Auth - you must provide credentials to this method [login]."
     }
 
     return def.promise;
@@ -174,24 +151,30 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
   /**
    * LOGOUT
    * 
-   * @description valenceAuth's stock logout function. Currently only support token based auth
+   * @description valence.auth's stock logout function. Currently only support token based auth
    */
-  Auth.prototype.logout = function() {
+  valence.auth.logout = function() {
     var self = this,
         def = $q.defer();
 
     self.postFlow({isValidated: false, setToken: null});
-    $location.path(valenceAuth.endpoints.logout.success);
 
-    def.resolve(self);
+    $location.path(valence.auth.endpoints.logout.success);
+
+    valence.acl.clearIdentity().then(function(identity) {
+      def.resolve(identity);
+    });
 
     return def.promise;
   };
 
   /**
-   * Handles all of the post Auth opts.
+   * POST FLOW
+   * 
+   * @param  {[type]} opts [description]
+   * @return {[type]}      [description]
    */
-  Auth.prototype.postFlow = function(opts) {
+  valence.auth.postFlow = function(opts) {
     var self = this;
 
     for(var prop in opts) {
@@ -209,21 +192,21 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
    * SET TOKEN
    * 
    * @param {[type]} token [description]
-   * @description Sets Auth token based on auth scheme
+   * @description Sets valence.auth token based on auth scheme
    */
-  Auth.prototype.setToken = function(token) {
+  valence.auth.setToken = function(token) {
     var self = this;
 
-    if(this.scheme.storage === 'localStorage') {
-      window.localStorage.token = token;
-    } else if(this.scheme.storage === 'sessionStorage') {
-      window.sessionStorage.token = token;
+    if(storage === 'localStorage') {
+      window.localStorage[valence.auth.token] = token;
+    } else if(storage === 'sessionStorage') {
+      window.sessionStorage[valence.auth.token] = token;
     }
 
     if(token) {
-      $http.defaults.headers.common['Authorization'] = 'Bearer ' + self.getToken();
+      $http.defaults.headers.common['authorization'] = 'Bearer ' + self.getToken();
     } else {
-      delete $http.defaults.headers.common['Authorization'];   
+      delete $http.defaults.headers.common['authorization'];   
     }
   };
 
@@ -233,170 +216,66 @@ auth.service('auth', ['valenceAuth', '$rootScope', '$location', '$route', '$http
    * @return {[type]} [description]
    * @description Returns the correct token based on auth scheme.
    */
-  Auth.prototype.getToken = function() {
+  valence.auth.getToken = function() {
     var token = null;
 
-    if(this.scheme.storage === 'localStorage') {
-      token = window.localStorage.token;
-    } else if(this.scheme.storage === 'sessionStorage') {
-      token = window.sessionStorage.token;
+    if(storage === 'localStorage') {
+      token = window.localStorage[valence.auth.token];
+    } else if(storage === 'sessionStorage') {
+      token = window.sessionStorage[valence.auth.token];
     }
 
     return token;
   };
 
-  // /**
-  //  * SET IDENTITY
-  //  * 
-  //  * @param {[type]} data User data to save to LS.
-  //  * @description  Saves authenticated user data to LS as an identity reference.
-  //  */
-  // Auth.prototype.setIdentity = function(data) {
-  //   if(this.scheme.storage === 'localStorage') {
-  //     window.localStorage[this.scheme.identity] = JSON.stringify(data);
-  //   } else if(this.scheme.storage === 'cookie') {
-  //     // parse cookies, not-written yet.
-  //   } else {
-  //     this.identity = data;
-  //   }
-  // };
-
-  // *
-  //  * GET IDENTITY
-  //  * 
-  //  * @return {Object} Empty object or the parsed localStorage identity object.
-   
-  // Auth.prototype.getIdentity = function() {
-  //   var identity = null;
-
-  //   if(this.scheme.storage === 'localStorage') {
-  //     if(!window.localStorage[this.scheme.identity]) {
-  //       window.localStorage[this.scheme.identity] = JSON.stringify({});
-  //     }
-  //     identity = JSON.parse(window.localStorage[this.scheme.identity]);
-  //   } else if(this.scheme.storage === 'cookie') {
-  //     // parse cookies, not-written yet.
-  //   } else {
-  //     identity = this.identity;
-  //   }
-    
-  //   return identity;
-  // };
-
-  /**
-   * VALIDATE ROLES
-   *
-   * @description  Every time validate is called, we also check for Role validation.
-   *               This will take the order of roles in the array and check them against
-   *               what roles have been registered by the user. If found it will execute the provided callback
-   *               with the AUth class passed as context, the Promise object and a few Angular services passed as arguments. 
-   *               At that point the user is left to decide what that role means. As long as they either resolve or reject the promise,
-   *               this will work.
-   *                
-   * @param  {[type]} route [description]
-   * @return {[type]}       [description]
-   */
-  Auth.prototype.validateRoles = function(route) {
-    var def = $q.defer();
-    
-    if(route && route.auth.roles && route.auth.roles.length) {
-      for(var i=0; i<route.auth.roles.length; i++) {
-        for(var j=0; j<valenceAuth.roles.length; j++) {
-          if(route.auth.roles[i] === valenceAuth.roles[j].role) {
-            valenceAuth.roles[j].fn.call(this, def, $routeParams, $route, $location);
-          }
-        }
-      }
-    } else {
-      def.resolve();
-    }
-
-    return def.promise;
-  };
-
-  // There were some runtime issues behind the need for this that I didn't quite understand.
-  this.Auth = new Auth();
-  // Global reference not bound to 'this'
-  Service = this.Auth;
+  // Total short circuit
+  if(valence.auth.enabled !== false) {
+    // Explicitly set to true so that the
+    // route hook can work.
+    valence.auth.enabled = true;
+  } else {
+    // it does === false: short circuit
+    return;
+  }
 
   //
-  // ROUTE HOOKS
+  // CONFIG AND ERROR HANDLING
+  //------------------------------------------------------------------------------------------//
+  // @description ensures the valence.auth module will have everything it needs.
+  if(valence.auth.endpoints) {
+    if(!valence.auth.endpoints.validate) {
+      throw "Valence - valence.auth: The Endpoints config item requires a 'validate' property. This is the property we use to validate an identity's active session."  
+    }
+    if(!valence.auth.endpoints.login) {
+      throw "Valence - valence.auth: The Endpoints config item requires a 'login' property. This is the property we use to create a user auth identity."  
+    }
+    if(!valence.auth.endpoints.logout) {
+      throw "Valence - valence.auth: The Endpoints config item requires a 'logout' property. This is the property we use to destroy a user auth identity."  
+    }
+  } else {
+    throw "Valence - valence.auth: No endpoints config found. Make sure in your app's .config() you specify $valence.authProvider.endpoints = {}"
+  }
+
+  //
+  // ROUTE HOOK
   //------------------------------------------------------------------------------------------//
   function authHook(key, path) {
+    var redirect;
     
-    if(path[key].auth || valenceAuth.authEvery) {
+    if(path[key].auth || valence.auth.every) {
 
       if(path[key].auth && path[key].auth.redirect) {
         redirect = path[key].auth.redirect;
       }
 
-      Service.validate(path[key], redirect);
+      valence.auth.validate(path[key], redirect);
     }
   }
 
   // Add hook if enabled
-  if(valenceAuth.enabled) {
-    route.addHook(authHook);
+  if(valence.auth.enabled) {
+    valence.route.addHook(authHook);
   }
 
-  return this.Auth;
+  return valence;
 }]);
-
-/*********************************************************************************************************************************
- * NG AUTH PROVIDER
- *********************************************************************************************************************************
- *
- * @description Expose the Auth module as a provider so that auth settings can be managed by Angular's config.
- * 
- */
-auth.provider('valenceAuth', function() {
-  return {
-    dataStore: [],
-    scheme: {
-      type: 'token',
-      name: 'token',
-      identity: 'user',
-      storage: 'localStorage'
-    },
-    $get: function() {
-      this.roles = valenceAuth.roles;
-      return this;
-    }
-  }
-});
-
-//
-// GLOBAL AUTH API
-//------------------------------------------------------------------------------------------//
-// @description Role registration has to be done before Angular even has an idea of what Auth
-//              is, so we create a global space to to that and then pull it into the class
-//              scope later.
-
-/**
- * AUTH
- *
- * @description Place holder object for some minimal global API
- * @type {Object}
- */
-window.valenceAuth = {};
-
-/**
- * ROLES
- *
- * @description  Placeholder store for roles registered via valenceAuth.role()
- * @type {Array}
- */
-valenceAuth.roles = [];
-
-/**
- * ROLE
- *
- * @description Globalized method to allow role registration before anything has bee loaded by angular.
- * @param  {[type]}   role [description]
- * @param  {Function} fn   [description]
- * @return {[type]}        [description]
- */
-valenceAuth.role = function(role, fn) {
-  valenceAuth.roles.push({role: role, fn: fn});
-};
-

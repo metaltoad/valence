@@ -58,14 +58,17 @@ valenceApp.service('route', ['valence', 'loader', '$rootScope', '$location', '$q
    * @description Analyzes route config to load auth rules and view models, etc.
    * @return {[type]}       [description]
    */
-  function parseRoutes() {
+  function parseRoutes(hook) {
     var urlSegs = splitAndStrip($location.path()),
         routeMached = false,
+        callbacks,
         routeSegs;
 
     // Kick off the loader right away
     loader.run();
     
+    callbacks = (hook)? [hook] : hooks;
+
     // Waint until routeParams are available or
     // we can say there aren't any
     getRouteParams().then(function(data) {
@@ -80,7 +83,7 @@ valenceApp.service('route', ['valence', 'loader', '$rootScope', '$location', '$q
         // Param-less route.
         if(route === $location.path()) {
           // Run hooks.
-          hooks.forEach(function(itm, idx) {
+          callbacks.forEach(function(itm, idx) {
             itm(route, $route.routes);
           });
         } else {
@@ -132,7 +135,7 @@ valenceApp.service('route', ['valence', 'loader', '$rootScope', '$location', '$q
                 // this ensures the hooks will only be executed one per match.
                 routeMached = true;
                 // run hooks.
-                hooks.forEach(function(itm, idx) {
+                callbacks.forEach(function(itm, idx) {
                   itm(route, $route.routes);
                 });
               }
@@ -147,24 +150,32 @@ valenceApp.service('route', ['valence', 'loader', '$rootScope', '$location', '$q
   // API
   //------------------------------------------------------------------------------------------//
   // @description
-  var API = {};
+  valence.route = {};
 
   /**
    * ADD HOOK
    * @param {Function} fn [description]
    * @description Simple API to keep hooks private.
    */
-  API.addHook = function(fn) {
+  valence.route.addHook = function(fn) {
     hooks.push(fn);
   };
+
+  valence.route.parseRoutes = parseRoutes;
 
   //
   // INIT OPTS
   //------------------------------------------------------------------------------------------//
 
-  $rootScope.$on('$locationChangeSuccess', function(data) {
+  $rootScope.$on('$locationChangeSuccess', function(evt, absNewUrl, absOldUrl) {
+
+    // Don't save the URL
+    valence.route.previous = absOldUrl.split('#')[1];
+
+    // Parse the routes.
     parseRoutes();
+
   });
 
-  return API;
+  return valence;
 }]);

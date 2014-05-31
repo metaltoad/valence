@@ -3,41 +3,42 @@
 /*******************************************************************************************************
  * ANGULAR DATA - CORE
  *******************************************************************************************************
+ * @description holds pre-config module definitions to avoid undefined errors.
  */
 
 valenceApp.provider('valence', {
 
-  modelAPI: {},
-
   loader: {},
-
-  model: null,
 
   models: [],
 
-  viewModel: '',
+  roles: [],
 
-  compileTarget: document.body,
+  cloud: {},
 
-  retrievalQueue: [],
+  store: {},
 
-  persistenceQueue: [],
+  acl: {
+    identity: {}
+  },
 
-  timers: [],
+  auth: {
+    endpoints: {
+      login:{},
+      logout: {},
+      validate: {}
+    }
+  },
 
-  retrievalProcessing: false,
-
-  persistenceProcessing: false,
-
-  applyQueue: [],
-
-  appliedModels: [],
+  route: {},
 
   storageEngine: {primary: 'localStorage', fallbackToMemory: true},
 
   $get: function($route) {
     this.model = valence.model;
     this.models = valence.models;
+    this.role = valence.role;
+    this.roles = valence.roles;
     valence = this;
     return this;
   }
