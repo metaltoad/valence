@@ -1,32 +1,43 @@
 # Valence
 A full circle data management solution for Angular.js Apps.
 
-## Version 0.2
+## Version 1.0
 
-This project is so beta even its docs are in beta.
-
-Feel free to play around with stuff and things and contribute!
-
-The DEV branch has the whole working demo. For it you need:
-
-Node, MongoDB, Grunt and patience.
+ * The model layer now uses the strategy pattern to move through sequences.
+ * Valence now includes access control with identity management.
+ * Consistent API across modules.
+ * Consolidated route hook system.
+ * Stronger auth integration when fetching/persisting data in the cloud.
 
 ### Installation
 
     bower install valence
 
-Or fork and run locallly.
+### Development
 
 You'll notice that master has no package.json, that is because master is not intended for development and is only meant for bower installations. To work with the code from a clone, please checkout the dev branch.
 
-### Known issues
+1. Clone
+2. git checkout dev
+3. cd valence/cloud-app
+4. npm install
+5. node app.js
+6. cd ../data-app
+7. npm install && bower install
+8. grunt server
 
-The relational model is in a very fire and fail state filled with exploratory code. The only real problem now is some redundancy in nested models.
+#### Dependencies
 
-There is also some issues when creating Auth roles. See the Author role in the demo.
+For step 3, you will need mongodb installed an running. You will also need to import the valence database found in /db.
+
+### Issues
+
+Please report them in the issues tab.
 
 ### The future
 
-Checkout the strategy-refactor branch and read the notes at the top of the Model layer's file to read my latest ideas.
+The future will contain lazy-loading and pagination integratations!
+
+And other stuff I haven't thought of yet.
 
 
