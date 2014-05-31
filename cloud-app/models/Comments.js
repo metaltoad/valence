@@ -14,6 +14,9 @@ exports.getComments = function(id, fn) {
 };
 
 exports.createComment = function(data, fn) {
+  
+  data.created = new Date().getTime();
+
   collection.insert(data, function(err, item) {
     return fn(err, item);
   });
