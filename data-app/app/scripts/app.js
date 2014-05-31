@@ -2,7 +2,7 @@
 
 var app = angular.module('valenceDemoApp', ['ngRoute', 'valence']);
 
-app.config(function ($routeProvider, valenceProvider, valenceAuthProvider, $sceProvider) {
+app.config(function ($routeProvider, valenceProvider, $sceProvider) {
   
   // Disable sce
   $sceProvider.enabled(false);
@@ -12,17 +12,20 @@ app.config(function ($routeProvider, valenceProvider, valenceAuthProvider, $sceP
 
   valenceProvider.loader = {
     loader: '#loader',
-    content: '#transition-wrapper'
+    content: '#transition-wrapper',
+    enabled: true
   };
   
-  valenceProvider.storageEngine = {primary: 'localStorage', fallbackToMemory: true};
+  valenceProvider.storageEngine = {primary: 'memory', fallbackToMemory: true};
 
-  valenceAuthProvider.endpoints = {
+  valenceProvider.acl.identity.model = 'user';
+
+  valenceProvider.auth.endpoints = {
     login: {
       URL: 'http://localhost:9001/session',
       requires: ['username', 'password'],
       method: 'POST',
-      sucess: '/'
+      success: '/'
     },
     logout: {
       URL: 'http://localhost:9001/session',
@@ -31,15 +34,12 @@ app.config(function ($routeProvider, valenceProvider, valenceAuthProvider, $sceP
     },
     validate: {
       URL: 'http://localhost:9001/session',
-      method: 'GET'
+      method: 'GET',
+      name: 'token'
     }
   };
 
-  valenceAuthProvider.session = {
-    headers: {
-      withCredentials: true,
-    }
-  };
+  valenceProvider.auth.enabled = true;
 
   $routeProvider
     .when('/', {
@@ -52,9 +52,7 @@ app.config(function ($routeProvider, valenceProvider, valenceAuthProvider, $sceP
       controller: 'LoginCtrl',
       auth: {
         redirect: {
-          auth: {
-            success: '/'
-          }
+          success: '/'
         }
       }
     })
@@ -71,9 +69,8 @@ app.config(function ($routeProvider, valenceProvider, valenceAuthProvider, $sceP
     .when('/blog/new', {
       templateUrl: 'views/post/new.html',
       controller: 'PostCtrl',
-      auth: true,
-      redirect: {
-        auth: {
+      auth: {
+        redirect: {
           fail: '/login'
         }
       }
@@ -81,7 +78,7 @@ app.config(function ($routeProvider, valenceProvider, valenceAuthProvider, $sceP
     .when('/blog/:post_id', {
       templateUrl: 'views/post.html',
       controller: 'PostCtrl',
-      model: ['post'],
+      model: ['post', 'comments'],
       auth: false
     })
     .when('/blog/:post_id/edit', {
@@ -89,22 +86,21 @@ app.config(function ($routeProvider, valenceProvider, valenceAuthProvider, $sceP
       controller: 'PostCtrl',
       model: 'post',
       auth: {
-        enabled: true,
+        redirect: {
+          fail: '/login'
+        }
+      },
+      access: {
         roles: ['admin', 'author'],
         redirect: {
-          auth: {
-            fail: '/login'
-          },
-          roles: {
-            fail: '/blog'
-          }
+          fail: 'previous'
         }
       }
     })
     .when('/authors/:author_id', {
       templateUrl: 'views/authors.html',
       controller: 'AuthorsCtrl',
-      model: 'authors'
+      model: ['authors', 'author_posts']
     })
     .when('/guides', {
       templateUrl: 'views/guides.html',
