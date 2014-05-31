@@ -10,11 +10,11 @@ app.config(function ($routeProvider, valenceProvider, $sceProvider) {
   // NG DATA CONFIG
   valenceProvider.api = 'http://localhost:9001';
 
-  valenceProvider.loader = {
-    loader: '#loader',
-    content: '#transition-wrapper',
-    enabled: true
-  };
+  
+  valenceProvider.loader.loader = '#loader',
+  valenceProvider.loader.content = '#transition-wrapper',
+  valenceProvider.loader.enabled = true
+  
   
   valenceProvider.storageEngine = {primary: 'memory', fallbackToMemory: true};
 
