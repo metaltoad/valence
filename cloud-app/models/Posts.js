@@ -54,8 +54,9 @@ exports.findById = this.findById = function(id, fn) {
 exports.newPost = function(data, fn) {
   collection.find({title: data.title, author_id: data.author_id}).toArray(function(err, items) {
     if(!items.length) {
-      Users.findById(data.author_id, function(err, user) {
+      Users.findById(new ObjectID(data.author_id), function(err, user) {
         if(err) return fn(err);
+        data.author_id = new ObjectID(data.author_id);
         data.author = user.name;
         data.avatar = "http://placehold.it/64x64";
         data.created = new Date().getTime();
