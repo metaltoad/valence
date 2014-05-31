@@ -1,21 +1,53 @@
 // 'use strict';
 
 /***********************************************************************************************************************************************
- * ANGULAR DATA - MODEL
+ * VALENCE - MODEL
  ***********************************************************************************************************************************************
  * @description On page-load/navigation:
  *
- * 1. analyze the current route, see if route has model property.
- * 2. 
+ * @REFACTOR  (yeah I make my own doc tags so what)
+ *            The goal here is to refactor the model core in a way the utilizes the strategy pattern
+ *            and a queueing system for requests. The core challenge here will be relationship parsing.
+ *            The current model uses recursion to find a model's parent if present. Once found it then
+ *            parses child models. The problem with this model is when a model needs to be fetched that is standalone
+ *            in its data needs it proceeds to fetch child models even though they are irrelevant in that
+ *            specific view.
+ *
+ *            Right now, relationships are parsed but models are stored separately. Which doens't really make sense.
+ *            If relationships are parsed then objects should be mutated to be the tree that matches the whole data set.
+ *            The challenge here is modeling the data to be easily parseable: 
+ *
+ *              The comments model belongs to the post model which belongs to the posts model.
+ *              The issue with constructing trees like that are: post isn't actually a thing it is an object that is in
+ *              an index of the posts array, while comments can actually be an injected property within the post object.
+ *              Since both are specified as belongsTo, how do you diffrentiate objects that don't have explicit naming?
+ *
+ *              The alternative, or another option is to not let lists be a 'thing' that you can fetch, but rather extend the
+ *              thing, like 'post' to say: model.get('post').all(); to indicate, that this thing can be a part of a list.
+ *              Then maybe for child objects that could also tehcnically be a list: model.get('post').comments();
+ *
+ *            The other option is to ignore predetermined relatioships by doing an 'on demand' system as opposed to relational binding
+ *            that simply pulls in another model when asked for and assigns that model's data to the corresponding fields on the scope.
+ *            This complicates though when loading models by data via another model when not explicitly called. This was solved by the original
+ *            'URL driven' approach that used by: {route_param: data_field}. That approach is limiting in that you can't make custom queries
+ *            without using $routeParams. URL driven turned into URL coupled. The above delimma really only applies to 'view models' as on load it's extremely
+ *            easy to call .get() on the fly.
+ *
+ *            The on-demand system however begs the question: 'why even bother formalizing the notion of a view model in angular!??' 
+ *
+ *            It seems as though Ember is successful with treating all models this way because the view loading hierarchy has been engineered for this purpose.
+ *            
  */
-valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$rootScope', '$location', '$rootElement', '$q', '$routeParams',
-  function(valence, cloud, store, loader, $route, $rootScope, $location, $rootElement, $q, $routeParams) {
+valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', 'auth', '$route', '$rootScope', '$location', '$rootElement', '$q', '$routeParams', 'route',
+  function(valence, cloud, store, loader, auth, $route, $rootScope, $location, $rootElement, $q, $routeParams, route) {
+
   //
   // UTILITY FUNCTIONS
   //------------------------------------------------------------------------------------------//
   
   /**
    * SAFE APPLY
+   * 
    * @param  {[type]}   scope [description]
    * @param  {Function} fn    [description]
    * @description queues up a $scope.apply
@@ -29,413 +61,364 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
         clearInterval(applier);
         scope.$apply(fn);
       }
+      
     }, 100);
   };
 
   /**
-   * SPLIT AND STRIP
-   * @param  {[type]} obj [description]
-   * @return {[type]}     [description]
+   * GET MODEL CONFIG
+   * 
+   * @param  {[type]} model [description]
+   * @return {[type]}       [description]
    */
-  function splitAndStrip(obj) {
-    var stripped = [];
+  function getModelConfig(model) {
+    var config;
 
-    obj = obj.split('/');
-
-    for(var i=0; i<obj.length; i++) {
-      if(obj[i] !== "") {
-        stripped.push(obj[i]);
+    for(var i=0; i<valence.models.length; i++) {
+      if(valence.models[i].name === model) {
+        config = valence.models[i];
       }
     }
 
-    return stripped;
+    if(!config && opts) {
+      config = opts;
+    } else if(!config && !opts) {
+      throw 'Valence - model for ['+model+'] not found. Make sure to declare one through valence.model()';
+    }
+
+    return config;
   };
 
   /**
-   * GET ROUTE PARAMS
-   * @return {[type]} [description]
+   * MERGE 
+   * 
+   * @param  {[type]} src [description]
+   * @param  {[type]} ext [description]
+   * @return {[type]}     [description]
    */
-  function getRouteParams() {
-    var def = $q.defer(),
-        elapsed = 0;
+  function merge(src, ext) {
+    for (var p in ext) {
+      try {
+        // Property in destination object set; update its value.
+        if ( ext[p].constructor === Object ) {
+          src[p] = Model.fn.merge(src[p], ext[p]);
+        } else {
+          src[p] = ext[p];
+        }
+      } catch(e) {
+        // Property in destination object not set; create it and set its value.
+        src[p] = ext[p];
+      }
+    }
 
-    var paramChecker = setInterval(function() {
-      if(Object.keys($routeParams).length) {
-        clearInterval(paramChecker);
-        def.resolve($routeParams);
-      } else {
-        elapsed += 300;
-        if(elapsed >= 1000) {
-          clearInterval(paramChecker)
-          def.resolve(null)
+    return src;
+  };
+
+  /**
+   * BUILD PARAM QUERY
+   * 
+   * @param  {[type]} opts [description]
+   * @return {[type]}      [description]
+   */
+  valence.buildParamQuery = function(opts) {
+    var query = {},
+        predicate;
+        
+    if(opts) {
+      if(opts.by) {
+        predicate = ['by'];
+      } else if(opts.params && !opts.data) {
+        predicate = ['params'];
+      } else if(opts.data && !opts.params) {
+        predicate = ['data'];
+      } else if(opts.params && opts.data) {
+        predicate = ['params', 'data'];
+      }
+    }
+
+    if(predicate) {
+      // Predicates found, build out each one
+      for(var i=0; i<predicate.length; i++) {
+        // Loop through param in each predicate
+        for(var param in opts[predicate[i]]) {
+          // Set to object if it doesn't exist to avoid RT errors.
+          if(!query[predicate[i]]) {query[predicate[i]] = {}}
+
+          // Capture routeParams
+          if($routeParams[param]) {
+            // Override if HTTP
+            if(predicate[i] == 'params') {
+              query[predicate[i]][param] = $routeParams[param];
+            } else {
+              // use route params and substitution
+              query[predicate[i]][opts[predicate[i]][param]] = $routeParams[param];
+            }
+          }
+
+          // Ignore Route params if specified
+          if(opts.useRouteParams === false) {
+            query[predicate[i]][param] = opts[predicate[i]][param];
+          }
         }
       }
-    }, 300);
-
-    return def.promise;
+    }
+    
+    return (Object.keys(query).length)? query : false;
   };
+
+  /***********************************************************************************************************************************************
+   * STRATEGY SEQUENCES
+   ***********************************************************************************************************************************************
+   * @description Default sequence map.
+   */
   
+
+
   /*********************************************************************************************************************************************
    * MODEL CONSTRUCTOR
    *********************************************************************************************************************************************
    * @description Serves as the service entry point for working with models. At this point it
    *              does nothing more than give us a prototype chain and perform some basic,
    *              global-to-models error handling.
+   *
+   * @TODO Actually architect this thing instead of all this procedural bullshit.
    */
-  var Model = function() {
-    // do stuff like check if ngModels has anything in it.
-    if(!valence.models.length) {
-      throw 'valence - no models in valence.models were found. Add a model by using: valence.model("myModelName", {})';
+  var Model = function(action, args) {
+    // Scope resolution
+    var self = this;
+
+    // Default config object
+    var config = {
+      loader: true,
+      belongsTo: null,
+      hasMany: null,
+      localize: true,
+      forceFetch: false,
+      ignoreDefaultConfig: false,
+      storeInMemory: false,
+      refreshModel: true,
+      auth: false
+    };
+
+    // Build config
+    if(args.opts) {
+      if(args.opts.ignoreDefaultConfig) {
+        this.opts = args.opts;
+      } else {
+        this.opts = merge(config, merge(getModelConfig(args.model), args.opts));
+      }
+    } else {
+      this.opts = merge(config, getModelConfig(args.model));
     }
+
+    this.args = {};
+
+    this.args.action = action;
+    this.args.model = args.model;
+    this.args.opts = this.opts;
+    this.args.data = args.data;
+    this.args.def = args.def;
+
+    // start building strategy
+    this.strategeries = [];
+
+    // Sequence Mapping
+    this.sequences = {};
+
+    //
+    // GET SEQUENCES
+    //------------------------------------------------------------------------------------------//
+    // @description
+    this.sequences.GET = {};
+
+    this.sequences.GET.save = [
+      {fn: store.set, fail: self.halt, pass: self.conquer, overriden: self.conquer, overrides:[!self.opts.localize], name: 'store.set'}
+    ];
+
+    this.sequences.GET.cloud = [
+      {fn: cloud.get, fail: self.halt, pass: this.sequences.GET.save, name:'cloud.get'}
+    ];
+
+    this.sequences.GET.store = [
+      {fn: store.get, fail: self.sequences.GET.cloud, pass: self.conquer, overrides:[self.opts.forceFetch], name:'store.get'}
+    ];
+
+    this.sequences.GET.init = [
+      {fn: loader.run, pass: self.sequences.GET.store, overrides:[!valence.loader.enabled], name:'loader.run'}
+    ];
+
+    //
+    // POST SEQUENCES
+    //------------------------------------------------------------------------------------------//
+    // @description
+    this.sequences.POST = {};
+
+    this.sequences.POST.store = [
+      {fn: store.set, fail: self.halt, pass: self.conquer, overriden: self.conquer, overrides:[!self.opts.localize], name:'store.set'}
+    ];
+
+    this.sequences.POST.fetch = [
+      {fn: cloud.get, fail: self.halt, pass: this.sequences.POST.store, name:'cloud.get', overriden: this.sequences.POST.store, overrides:[!self.opts.refreshModel]}
+    ];
+
+    this.sequences.POST.cloud = [
+      {fn: cloud.set, fail: self.halt, pass: this.sequences.POST.fetch, name:'cloud.set'}
+    ];
+
+    this.sequences.POST.init = [
+      {fn: loader.run, pass: self.sequences.POST.cloud, overrides:[!valence.loader.enabled], name:'loader.run'}
+    ];
+
+    //
+    // PUT SEQUENCES
+    //------------------------------------------------------------------------------------------//
+    // @description
+    this.sequences.PUT = this.sequences.POST;
+
+    //
+    // DELETE SEQUENCE
+    //------------------------------------------------------------------------------------------//
+    // @description
+    this.sequences.DELETE = {};
+
+    this.sequences.DELETE.store = [
+      {fn: store.set, fail: self.halt, pass: self.conquer, overriden: self.conquer, overrides:[!self.opts.localize], name:'store.set'}
+    ];
+
+    this.sequences.DELETE.fetch = [
+      {fn: cloud.get, fail: self.halt, pass: this.sequences.DELETE.store, name:'cloud.get'}
+    ];
+
+    this.sequences.DELETE.cloud = [
+      {fn: cloud.remove, fail: self.halt, pass: this.sequences.DELETE.fetch, name:'cloud.set'}
+    ];
+
+    this.sequences.DELETE.init = [
+      {fn: loader.run, pass: self.sequences.DELETE.cloud, overrides:[!valence.loader.enabled], name:'loader.run'}
+    ];
+
+    // Build strategies and run them
+    this.advance();
   };
 
   //
-  // MODEL PROTOTYPE
+  // SEQUENCE PROCESSING
   //------------------------------------------------------------------------------------------//
-  // @contains methods attached to the prototype chain of the Model class.
-  Model.fn = Model.prototype = {
-    /**
-     * ----------
-     * GET MODULE
-     * ----------
-     * @type {Object}
-     */
-    getter: {
-      /**
-       * INIT
-       * 
-       * @param  {[type]} model [description]
-       * @param  {[type]} opts  [description]
-       * @return {[type]}       [description]
-       */
-      init: function(model, opts, promise) {
-        var self = this,
-            belongsTo = false,
-            hasMany = false,
-            standAlone,
-            query;
+  // @description
 
-        if(!opts) {
-          opts = Model.fn.getModelConfig(model);
+  /**
+   * ADVANCE
+   *
+   * @description Moves through a sequence's strategies as needed.
+   * @return {[type]} [description]
+   */
+  Model.prototype.advance = function() {
+    var self = this,
+        strategy;
+
+    // load init
+    strategy = this.sequences[this.args.action].init;
+
+    (function fire(strategy, idx) {
+        
+        idx = idx || 0;
+      
+        strategy = strategy[idx];
+
+        if(strategy.overrides) {
+          Overrides:
+          for(var j=0; j<strategy.overrides.length; j++) {
+            if(strategy.overrides[j]) {
+              if(strategy.overriden) {
+                if(strategy.overriden.constructor === Function) {
+                  return strategy.overriden(self.args);
+                } else {
+                  return fire(strategy.overriden);
+                }
+              }
+              break Overrides;
+            }
+          }
         }
-
-        // Force bool
-        belongsTo = !!opts.belongsTo;
-        hasMany = !!opts.hasMany;
-       
-        // Determine if stand alone model.
-        standAlone = self.isStandAlone(opts);
-
-        if(belongsTo) {
-          return this.init(opts.belongsTo.model, null, promise);
-        } else {
-          // Build query
-          query = Model.fn.buildParamQuery(opts);
+        
+        strategy.fn(self.args).then(function(data) {
           
-          store.getModel(model, opts, query).then(function(storeGetData) {
-            if(hasMany && !standAlone) {
-              // loader.loaded(model);
-              apply(model, opts, storeGetData);
-              self.hasMany(model, opts.hasMany.model, null, promise);
+          if(data) {
+            self.args.data = data;
+          }
+
+          if(strategy.pass) {
+            if(strategy.pass.constructor === Function) {
+              return strategy.pass(self.args);
             } else {
-              apply(model, opts, storeGetData, promise);
+              return fire(strategy.pass);
             }
-          }, function(storeGetData) {
-            // Data not found in store, query cloud
-            cloud.fetchModel(model, opts, query).then(function(cloudGetData) {
-              // Save to store.
-              if(opts.serializer) {
-                cloudGetData = opts.serializer(cloudGetData);
-              }
-              store.setModel(model, cloudGetData).then(function(storeSaveData) {
-                if(hasMany && !standAlone) {
-                  // loader.loaded(model);
-                  apply(model, opts, storeSaveData);
-                  self.hasMany(model, opts.hasMany.model, null, promise);
-                } else {
-                  apply(model, opts, storeSaveData, promise);
-                }
-              }, function(storeSaveData) {
-                // Could not save to store, reject promise
-              })
-            }, function(cloudGetData) {
-              // cloud rejected, SOL.
-            });
-          });
-        }
-      },
-      /**
-       * HAS MANY
-       * 
-       * @param  {[type]}  parentModel [description]
-       * @param  {[type]}  model       [description]
-       * @param  {[type]}  opts        [description]
-       * @param  {[type]}  promise     [description]
-       * @return {Boolean}             [description]
-       */
-      hasMany: function(parentModel, model, opts, promise) {
-        var self = this,
-            hasMany = false,
-            parentOpts = Model.fn.getModelConfig(parentModel),
-            query;
-
-        if(!opts) {
-          opts = Model.fn.getModelConfig(model);
-        }
-
-        hasMany = !!opts.hasMany;
-
-        query = Model.fn.buildParamQuery(opts.belongsTo);
-
-        store.getModel(model, opts, query).then(function(storeGetData) {
-          if(hasMany) {
-            apply(model, opts, storeGetData);
-            self.hasMany(model, opts.hasMany.model, null, promise)
           } else {
-            apply(model, opts, storeGetData, promise);
+            if(strategy[idx+1]) {
+              return fire(strategy, idx+1);
+            }
           }
-        }, function(storeGetData) {
-          // Query the parent model if config isn't specified
-          if((opts.HTTP && parentOpts.HTTP && opts.HTTP.GET && parentOpts.HTTP.GET && opts.HTTP.GET.url === parentOpts.HTTP.GET.url) 
-              || (opts.HTTP && opts.HTTP.GET.url === parentModel) || !opts.HTTP) {
-            // Persistent data source is the same, query the parent store by query is query
-            store.getModel(parentModel, parentOpts, query).then(function(storeGetFromParentData) {
-              // TODO: TEST hasMany SERIALIZATION
-              // if(opts.serializer) {storeGetFromParentData = opts.serializer(cloudGetData)}
-              // Now save that data to the store.
-              store.setModel(model, storeGetFromParentData).then(function(storeSetFromParentData) {
-                if(hasMany) {
-                  apply(model, opts, storeSetFromParentData);
-                  self.hasMany(model, opts.hasMany.model, null, promise)
-                } else {
-                  apply(model, opts, storeSetFromParentData, promise);
-                }
-              }, function(storeGetFromParentData) {
-                // throw some error
-              });
-            }, function(storeGetFromParentData) {
-              // We couldn't find what we needed in our parent data so we
-              // need to go fetch from das cloud.
-              cloud.fetchModel(model, opts, query).then(function(cloudGetData) {
-                if(opts.serializer) {cloudGetData = opts.serializer(cloudGetData);}
-                // Success! Save to store
-                store.setModel(model, cloudGetData).then(function(storeSaveData) {
-                  if(hasMany) {
-                    apply(model, opts, storeSaveData);
-                    self.hasMany(model, opts.hasMany.model, null, promise);
-                  } else {
-                    apply(model, opts, storeSaveData, promise);
-                  }
-                }, function(storeSaveData) {
-                  // Could not save to store, reject promise
-                  promise.reject(storeSaveData);
-                })
-              }, function(cloudGetData) {
-                // cloud rejected, SOL. throw some error
-                promise.reject(cloudGetData);
-              });
-            });
+        }, function(data) {
+
+          if(strategy.fail) {
+            if(strategy.fail.constructor === Function) {
+              return strategy.fail(self.args, data);
+            } else {
+              return fire(strategy.fail);
+            }
           } else {
-            // child depend is fromm totally different data store, kick off the retrieval sequence without
-            // care of what the parent wants #suchRebel
-            store.getModel(model, opts, query).then(function(storeGetData) {
-              if(hasMany) {
-                apply(model, opts, storeGetData);
-                self.hasMany(opts.hasMany.model, null, promise);
-              } else {
-                apply(model, opts, storeGetData, promise);
-              }
-            }, function(storeGetData) {
-              // 
-              cloud.fetchModel(model, opts, query).then(function(cloudGetData) {
-                // Serialize
-                if(opts.serializer) {cloudGetData = opts.serializer(cloudGetData)}
-                // Save to store
-                store.setModel(model, cloudGetData).then(function(storeSaveData) {
-                  if(hasMany) {
-                    apply(model, opts, storeSaveData)
-                    self.hasMany(opts.hasMany.model, null, promise);
-                  } else {
-                    apply(model, opts, storeSaveData, promise);
-                  }
-                }, function(storeSaveData) {
-                  // Could not save to store, reject promise
-                  promise.reject(storeSaveData);
-                })
-              }, function(cloudGetData) {
-                // cloud rejected, SOL.
-                promise.reject(cloudGetData);
-              });
-            });
-          }
+            if(strategy[idx+1]) {
+              return fire(strategy, idx+1);
+            }
+          } 
         });
-      },
-      /**
-       * IS STAND ALONE
-       *
-       * @description  Determines if the current model needs to parse its child models.
-       * @param  {[type]}  opts [description]
-       * @return {Boolean}      [description]
-       */
-      isStandAlone: function(opts) {
-        var isStandAlone = false, // Default return
-            routeSegs = splitAndStrip($location.path()),
-            urlSegs,
-            segMatch = 0,
-            url = $location.path();
-
-        if(opts.standAlone) {
-          if(opts.standAlone.url === url) {
-            isStandAlone = true;
-          } else {
-            urlSegs = splitAndStrip(opts.standAlone);
-
-            if(routeSegs.length === urlSegs.length) {
-              for(var i=0; i<routeSegs.length; i++) {
-                if(routeSegs[i] === urlSegs[i]) {
-                  segMatch++;
-                } else {
-                  if($routeParams[urlSegs[i].split(':')[1]] && routeSegs[i] === $routeParams[urlSegs[i].split(':')[1]]) {
-                    segMatch++;
-                  }
-                }
-              }
-
-              // If we're on teh 
-              if(segMatch === routeSegs.length) {
-                isStandAlone = true;
-              }
-            }
-          }
-        }
-
-        return isStandAlone;
-      }
-    },
-    /**
-     * ----------
-     * SET MODULE
-     * ----------
-     * @type {Object}
-     */
-    setter: {
-      init: function(action, model, data, promise) {
-        var self = this,
-            opts = Model.fn.getModelConfig(model),
-            hasMany,
-            query;
-
-        // Start the loader
-        loader.run(model, opts);
-
-        // If it has child models.
-        hasMany = !!(opts.hasMany && opts.hasMany.model);
-
-        query = Model.fn.buildParamQuery(opts.HTTP[action.toUpperCase()]);
-
-        cloud.saveModel(model, action, opts, query, data).then(function(cloudSaveData) {
-          // now call get on the whole thing
-          cloud.fetchModel(model, opts, Model.fn.buildParamQuery(opts.HTTP.GET)).then(function(cloudGetData) {
-            store.setModel(model, cloudGetData).then(function(storeSaveData) {
-              if(hasMany && Model.fn.getModelConfig(opts.hasMany.model).belongsTo.model === model) {
-                store.deleteModel(opts.hasMany.model).then(function() {
-                  apply(model, opts, storeSaveData, promise);
-                });
-              } else {
-                apply(model, opts, storeSaveData, promise);
-              }
-            }, function(storeSaveData) {
-              // if we can't save to store
-              promise.reject(storeSaveData);
-              loader.loaded(model);
-            });
-            }, function(cloudGetData) {
-
-          });
-        }, function(cloudSaveData) {
-          // cloud save failed
-          promise.reject(cloudSaveData);
-          loader.loaded(model);
-        });
-      }
-    },
-    /**
-     * GET MODEL CONFIG
-     * 
-     * @param  {[type]} model [description]
-     * @return {[type]}       [description]
-     */
-    getModelConfig: function(model) {
-      var config;
-
-      for(var i=0; i<valence.models.length; i++) {
-        if(valence.models[i].name === model) {
-          config = valence.models[i];
-        }
-      }
-
-      if(!config) throw 'Valence - model for ['+model+'] not found. Make sure to declare one through valence.model()';
-      return config;
-    },
-    /**
-     * BUILD PARAM QUERY
-     * 
-     * @param  {[type]} opts [description]
-     * @return {[type]}      [description]
-     */
-    buildParamQuery: function(opts) {
-      var query = {},
-          predicate;
-
-      if(opts) {
-        if(opts.by) {
-          predicate = ['by'];
-        } else if(opts.params && !opts.data) {
-          predicate = ['params'];
-        } else if(opts.data && !opts.params) {
-          predicate = ['data'];
-        } else if(opts.params && opts.data) {
-          predicate = ['params', 'data'];
-        }
-      }
-
-      if(predicate) {
-        // Returns structured query
-        for(var i=0; i<predicate.length; i++) {
-          for(var param in opts[predicate[i]]) {
-            if($routeParams[param]) {
-              if(!query[predicate[i]]) {
-                query[predicate[i]] = {};
-              }
-              query[predicate[i]][opts[predicate[i]][param]] = $routeParams[param];
-            }
-          }
-        }
-      }
-
-      return (Object.keys(query).length)? query : false;
-    }
+      
+    })(strategy);
   };
 
+  /**
+   * CONQUER
+   *
+   * @description If a sequence is successful, move on to send the model to the UI.
+   * @param  {[type]} args [description]
+   * @return {[type]}      [description]
+   */
+  Model.prototype.conquer = function(args) {
+    apply(args);
+  };
+
+  /**
+   * HALT
+   * 
+   * @param  {[type]} args [description]
+   * @return {[type]}      [description]
+   */
+  Model.prototype.halt = function(args, data) {
+    args.def.reject({args: args, data:data});
+    loader.halt();
+  };
+
+
   /***********************************************************************************************************************************************
-   * ANGULAR-DATA - MODEL API
+   * VALENCE - MODEL API
    ***********************************************************************************************************************************************
    * @description Promised based API allows for a manual .get/.set invocation while also
    *              letting view-model data be wired up as normal.
    */
-  var API = {};
 
   /**
    * GET
    * 
    * @param  {[type]} model [description]
-   * @param  {[type]} opts  [description]
+   * @param  {[type]} args  [description]
    * @return {[type]}       [description]
    */
-  API.get = Model.get = Model.fn.get = function(model, opts) {
+  valence.get  = function(model, args) {
     var def = $q.defer();
     
-    Model.fn.getter.init(model, opts, def);
+    args = args || {};
+
+    new Model('GET', {model: model, opts: args.opts, data: args.data, def: def});
 
     return def.promise;
   };
@@ -446,10 +429,10 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
    * @param {[type]} model [description]
    * @param {[type]} data  [description]
    */
-  API.put = Model.put = Model.fn.set = function(model, data) {
+  valence.put = function(model, args) {
     var def = $q.defer();
 
-    Model.fn.setter.init('PUT', model, data, def)
+    new Model('PUT', {model: model, opts: args.opts, data: args.data, def: def})
 
     return def.promise;
   };
@@ -460,10 +443,10 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
    * @param {[type]} model [description]
    * @param {[type]} data  [description]
    */
-  API.post = Model.post = Model.fn.set = function(model, data) {
+  valence.post = function(model, args) {
     var def = $q.defer();
-
-    Model.fn.setter.init('POST', model, data, def);
+    
+    new Model('POST', {model: model, opts: args.opts, data: args.data, def: def});
 
     return def.promise;
   };
@@ -477,43 +460,65 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
    * @return {[type]}       [description]
    * @description  can't use the word delete here because IE8 shits itself.
    */
-  API.remove = Model.remove = Model.fn.remove = function(model, data, def) {
+  valence.remove = function(model, args) {
     var def = $q.defer();
 
-    Model.fn.remove(model);
+    new Model('DELETE', {model: model, opts: args.opts, data: args.data, def: def});
 
     return def.promise;
   };
 
-  // Globalize the API portion.
-  window.valenceModel = API;
+  /**
+   * SCOPE
+   *
+   * @description allows for explicit definition of which scope to apply models to.
+   * @param  {[type]} model [description]
+   * @param  {[type]} scope [description]
+   * @return {[type]}       [description]
+   */
+  valence.scope = function(model, scope) {
+
+    model = (model.constructor === Array)? model : [model];
+
+    for(var m=0; m<model.length; m++) {
+      for(var i=0; i<valence.models.length; i++) {
+        if(valence.models[i].name === model[m]) {
+          valence.models[i].scope = scope;
+        }
+      }
+    }
+
+    return;
+  };
+
+  
   //
-  // ROOTSCOPE API
+  // ROOTSCOPE valence
   //------------------------------------------------------------------------------------------//
-  // @description This API maps to the internal API to allow DOM actions to fire valence events.
+  // @description This valence maps to the internal valence to allow DOM actions to fire valence events.
   
   /**
    * POST
    * @type {[type]}
    */
-  $rootScope.save = API.post;
+  $rootScope.save = valence.post;
 
   /**
    * PUT
    * @type {[type]}
    */
-  $rootScope.update = API.put;
+  $rootScope.update = valence.put;
 
   /**
    * REMOVE
    * @type {[type]}
    */
-  $rootScope.remove = API.remove;
+  $rootScope.remove = valence.remove;
   
   /***********************************************************************************************************************************************
    * CORE FUNCTIONS
    ***********************************************************************************************************************************************
-   * @description Shared processing function between API.
+   * @description Shared processing function between valence.
    */
   
   /**
@@ -522,74 +527,34 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
    * @param  {[type]} data  [description]
    * @description [description]
    */
-  function apply(model, opts, data, promise) {
-    var scopes = document.querySelectorAll('.ng-scope'),
-        scope, // scope iteration reference
-        thisModel, // context model
-        fields = opts.fields,
-        hasAllProperties = false, // bool for scope detection
-        matchCount, // how many to match,
-        matchedCount; // mow many have matched
-
-    // Resolves the model's promise at this point.
-    // We should'nt need to do scope comparison for this as
-    // if model.get() is ever called it should just reflect data returned from that promise.
-    if(promise) {
-      promise.resolve(data);
-      loader.loaded(model);
-    }
+  function apply(args) {
+    var scope;
     
-    data = serialize(opts, data);
-
-    // Loop through all the scopes on the DOM.
-    for(var i=0; i<scopes.length; i++) {
-      // Ignore scopes with ng-repeat attribute
-      // this may prove problematic for certain use-cases, but as for now
-      // it creates potention for HUGE amounts of wasted cycles.
-      if(!scopes[i].hasAttribute('ng-repeat')) {
-        scope = angular.element(scopes[i]).scope();
-        // here we need to do all of the model analysis
-        // determine relationships,
-        // and assign scope properties.
-        if(scope) {
-          if(fields) {
-            matchCount = 0;
-            matchedCount = 0;
-            for(var field in fields) {
-              matchCount++;
-              if(scope.hasOwnProperty(field)) {
-                matchedCount++;
-                if(fields[field] === _model) {
-                  // Just assign the entire model back to scope and let the dev decide how to use it.
-                  scope[field] = data;
-                } else {
-                  if(data.constructor === Object) {
-                    if(data.hasOwnProperty(field)) {
-                      scope[field] = data[field];
-                    } else {
-                      console.warn('valence - model property ['+ field +'] does not exist. Cannot assign to scope');
-                    }
-                  } else {
-                    // Further type checking is needed but not sure what to do here atm.
-                    scope[field] = data;
-                  }
-                }
-              }
-            }
-            
-            // All model fields matched to fields on the scope,
-            // proceed with applying.
-            if(matchedCount === matchCount) {
-              safeApply(scope);
-              loader.loaded(model);
-            } else {
-              console.warn('valence - a model $apply was attempted but none of the provided fields were found in scope [$id: '+scope.$id+'], meaning we do not really know what scope to apply the model to.');
-            }
-          } else {
-            console.warn('valence - Make sure your Model declaration has a [fields] property with the field names as keys for items in scope that are to receive model data.');
-          }
-        }
+    // Detect a scope set.
+    for(var i=0; i<valence.models.length; i++) {
+      if(valence.models[i].name === args.model) {
+        args.scope = valence.models[i].scope;
       }
+    }
+
+    scope = args.scope || $rootScope;
+
+    data = serialize(args.opts, args.data);
+
+    if(args.opts.normalize) {
+      args.opts.normalize(data, args, $q).then(function(normalized) {
+        scope[args.model] = data;
+
+        args.def.resolve(normalized);
+
+        loader.loaded(args.model);
+      });
+    } else {
+      scope[args.model] = data;
+
+      args.def.resolve(data);
+
+      loader.loaded(args.model);
     }
   };
 
@@ -689,131 +654,34 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', '$route', '$
   //
   // ROUTE HOOKS
   //------------------------------------------------------------------------------------------//
+  // @description this section adds a callback function to the routing process.
+  
+  function modelHook(key, path) {
 
-  function loadViewModel(scope) {
-    var urlSegs = splitAndStrip($location.path()),
-        routeMached = false,
-        routeSegs;
-
-    valence.appliedModels = [];
-
-    // Kick off the loader right away
-    loader.run();
-    
-    // Waint until routeParams are available or
-    // we can say there aren't any
-    getRouteParams().then(function(data) {
-      for(var route in $route.routes) {
-        var paramCounter = 0, // How many params exist
-            paramMatchedCounter = 0, // How many params match
-            paramsPassed = false, // Pass fail on params.length vs paramspassed
-            uriCounter = 0, // Number of segments in URI
-            uriMatchedCounter = 0, // Number of segments that match the actual URL
-            urisPassed = false; // If they all matched.
-
-        // Param-less route.
-        if(route === $location.path()) {
-          if($route.routes[route].model) {
-            // Force model declaration to array.
-            if($route.routes[route].model.constructor !==  Array) {
-              $route.routes[route].model = [$route.routes[route].model];
-            }
-            // Loop through models.
-            for(var m=0; m<$route.routes[route].model.length; m++) {
-              for(var i=0; i<valence.models.length; i++) {
-                if(valence.models[i].name === $route.routes[route].model[m]) {
-                  // We have a route and model match!
-                  Model.get(valence.models[i].name, valence.models[i]);
-                }
-              }
-            }
-          } else {
-            // These aren't the routes you're looking for. #jediCodeTrick
-            loader.finish();
-            // route matches location but no model found.
-            return;
-          }
-        }
-
-        // Segment routes
-        routeSegs = splitAndStrip(route);
-        
-        // We can say here that if they aren't
-        // the same length it is not the $route config we want.
-        if(routeSegs.length === urlSegs.length) {
-          // If there are actually $routeParams
-          if(data) {
-            // Begin looping over the route segments.
-            for(var i=0; i<routeSegs.length; i++) {
-              // If there's a : in the 'when' delcaration
-              // we know we need to look for a $routeParam
-              if(routeSegs[i].match(':') !== null) {
-                // Loop through $routeParams
-                for(var param in data) {
-                  // if this hits, we have params, increment the total number counter
-                  paramCounter++;
-                  // Check to see if a match
-                  if(routeSegs[i].match(param) !== null) {
-                    paramMatchedCounter++;
-                  }
-                }
-              } else {
-                // No param, increment the global URI counter
-                uriCounter++;
-                // Check to see if it matches the .when segment
-                if(routeSegs[i] === urlSegs[i]) {
-                  uriMatchedCounter++;
-                }
-              }
-            }
-
-            // As these are initialized to 0, we need to check their truthyness first
-            if(paramCounter && paramMatchedCounter && paramCounter === paramMatchedCounter) {
-              paramsPassed = true;
-            }
-
-            // Same as above
-            if(uriCounter && uriMatchedCounter && uriCounter === uriMatchedCounter) {
-              urisPassed = true;
-            }
-
-            // We have a match!
-            if(paramsPassed && urisPassed && !routeMached) {
-              // Angular creates two routes for each app.js entry, one with a trailing /
-              // this ensure it will only be run once.
-              routeMached = true;
-              // Check to see if a model property exists.
-              if($route.routes[route].model) {
-                // Force model to array
-                if($route.routes[route].model.constructor !==  Array) {
-                  $route.routes[route].model = [$route.routes[route].model];
-                }
-                // Loop through models
-                for(var m=0; m<$route.routes[route].model.length; m++) {
-                  for(var i=0; i<valence.models.length; i++) {
-                    // Start the process for getting the data!
-                    if(valence.models[i].name === $route.routes[route].model[m]) {
-                      Model.get(valence.models[i].name, valence.models[i]);
-                    }
-                  }
-                }
-              }
-            }
+    if(path[key].model) {
+      // Force model declaration to array.
+      if(path[key].model.constructor !==  Array) {
+        path[key].model = [path[key].model];
+      }
+      // Loop through models.
+      for(var m=0; m<path[key].model.length; m++) {
+        for(var i=0; i<valence.models.length; i++) {
+          if(valence.models[i].name === path[key].model[m]) {
+            // We have a key and model match!
+            valence.get(valence.models[i].name, valence.models[i]);
           }
         }
       }
-
+    } else {
+      // These aren't the keys you're looking for. #jediCodeTrick
       loader.finish();
-    });
-  };
+    }
 
-  //
-  // INIT OPTS
-  //------------------------------------------------------------------------------------------//
+    return;
+  }
 
-  $rootScope.$on('$locationChangeSuccess', function(data) {
-    loadViewModel();
-  });
+  // Add route hook.
+  valence.route.addHook(modelHook);
 
-  return new Model();
+  return valence;
 }]);

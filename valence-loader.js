@@ -4,58 +4,61 @@
  * ANGULAR DATA - ANGULAR DATA MODULES - LOADER
  *******************************************************************************************************
  */
-valenceApp.service('loader', ['valence', function(valence) {
+valenceApp.service('loader', ['valence', '$q', function(valence, $q) {
+  
+  //
+  // CONFIG
+  //------------------------------------------------------------------------------------------//
+  // @description Loader settings.
+  
+  // Model queue used in determining when to shut down the loader
+  valence.loader.queue = [];
+  
+  // Eventually holds reference to a time stamp.
+  valence.loader.loaderStarted = null;
 
-  var Loader = function() {
-
-    // Model queue used in determining when to shut down the loader
-    this.queue = [];
-    console.log(valence);
-    // Gernal flag to turn on/off the loader, enabled by default
-    this.enabled = (valence.loader && valence.loader.enabled === false)? false : true;
-
-    // Eventually holds reference to a time stamp.
-    this.loaderStarted = null;
-
-    // Classes for applying to the loader/content based on config or defaults.
-    this.loaderClasses = {
-      hide: (valence.loader.classes && valence.loader.classes.hide)? valence.loader.classes.hide : 'ngLoader-hidden',
-      show: (valence.loader.classes && valence.loader.classes.show)? valence.loader.classes.show : 'ngLoader-visible'
-    };
-
-    // Holds references to DOM components that have loaders.
-    this.loaderCollection = [];
-    this.contentCollection = [];
-
-    // Minimum time to display the loader
-    this.minLoaderDisplayTime = valence.loader.minLoaderDisplayTime || 500;
-
-    if(!this.enabled) {
-      return this.prototype = {
-        run: function(){},
-        loaded:function(){},
-        finish:function(){},
-        wrapUp: function(){},
-        halt:function(){}
-      }
-    }
-
-    return this;
+  // Classes for applying to the loader/content based on config or defaults.
+  valence.loader.loaderClasses = {
+    hide: (valence.loader.classes && valence.loader.classes.hide)? valence.loader.classes.hide : 'ngLoader-hidden',
+    show: (valence.loader.classes && valence.loader.classes.show)? valence.loader.classes.show : 'ngLoader-visible'
   };
 
+  // Holds references to DOM components that have loaders.
+  valence.loader.loaderCollection = [];
+  valence.loader.contentCollection = [];
+
+  // Minimum time to display the loader
+  valence.loader.minLoaderDisplayTime = 1000;
+
+  //
+  // OPERATIONS
+  //------------------------------------------------------------------------------------------//
+  // @description Loader control.
+  
   /**
    * RUN
    * @param  {Object} model When the loader is called with a model, that model gets added to a bank or queue.
    *                        The models get removed from the queue via the Model layer when loaded is called with the same model.
    * @return {[type]}       [description]
    */
-  Loader.prototype.run = function(model, opts) {
-    var content = valence.loader.content,
-        loaderElem = valence.loader.loader;
+  valence.loader.run = function(model, opts) {
+    var def = $q.defer(),
+        content = valence.loader.content,
+        loaderElem = valence.loader.loader,
+        data;
 
-    if(this.enabled) {
+
+    if(valence.loader.enabled) {
+      
       if(model) {
-        this.queue.push({name: model, opts:opts});
+
+        // Build promise resolution data is applicable.
+        model = model.model || model;
+        opts = model.opts || opts;
+        data = model.data;
+
+        valence.loader.queue.push({name: model, opts:opts});
+
         if(model.loader) {
           if(opts.loader.content) {
             content = opts.loader.content;
@@ -66,8 +69,8 @@ valenceApp.service('loader', ['valence', function(valence) {
         }
       }
 
-      if(!this.loaderStarted) {
-        this.loaderStarted = new Date().getTime();
+      if(!valence.loader.loaderStarted) {
+        valence.loader.loaderStarted = new Date().getTime();
       }
 
       content = (document.querySelectorAll(content).length) ? document.querySelectorAll(content)
@@ -77,17 +80,20 @@ valenceApp.service('loader', ['valence', function(valence) {
         : (function() {throw 'valence - ngLoader - It was requested that ['+loaderElem+'] be hidden when initiating the loader, however, no elements could be found in the DOM'})();
 
       for(var i=0; i<content.length; i++) {
-        content[i].classList.add(this.loaderClasses.hide);
-        content[i].classList.remove(this.loaderClasses.show);
-        this.contentCollection.push(content[i]);
+        content[i].classList.add(valence.loader.loaderClasses.hide);
+        content[i].classList.remove(valence.loader.loaderClasses.show);
+        valence.loader.contentCollection.push(content[i]);
       }
 
       for(var i=0; i<loaderElem.length; i++) {
-        loaderElem[i].classList.add(this.loaderClasses.show);
-        loaderElem[i].classList.remove(this.loaderClasses.hide);
-        this.loaderCollection.push(loaderElem[i]);
+        loaderElem[i].classList.add(valence.loader.loaderClasses.show);
+        loaderElem[i].classList.remove(valence.loader.loaderClasses.hide);
+        valence.loader.loaderCollection.push(loaderElem[i]);
       }
     }
+
+    def.resolve(data);
+    return def.promise;
   };
 
   /**
@@ -95,23 +101,23 @@ valenceApp.service('loader', ['valence', function(valence) {
    * @param  {Object} model Model passed in from the model layer. Gets compared with models in current queue
    * @return {[type]}       [description]
    */
-  Loader.prototype.loaded = function(model) {
+  valence.loader.loaded = function(model) {
     var newQueue = [];
     // here we check the queue for a model match and if found we remove from the queue
     // and call finished
     if(model) {
-      for(var i=0; i<this.queue.length; i++) {
-        if(model !== this.queue[i].name) {
-          newQueue.push(this.queue[i])
+      for(var i=0; i<valence.loader.queue.length; i++) {
+        if(model !== valence.loader.queue[i].name) {
+          newQueue.push(valence.loader.queue[i])
         }
       }
 
       // safe than splicing/deleting which can fuck up indexes in ie
-      this.queue = newQueue;
+      valence.loader.queue = newQueue;
 
-      this.finish();
+      valence.loader.finish();
     } else {
-      throw 'valence - ngLoader - Loader.loaded must be passed a model so it knows how "done" it is and when to stop the loader.'
+      throw 'valence - ngLoader - valence.loader.loaded must be passed a model so it knows how "done" it is and when to stop the loader.'
     }
   };
 
@@ -120,21 +126,21 @@ valenceApp.service('loader', ['valence', function(valence) {
    * 
    * @description Analyzes the current queue, if empty, reverses loader className applications
    */
-  Loader.prototype.finish = function() {
-    var self = this,
+  valence.loader.finish = function() {
+    var self = valence.loader,
         finishedTime;
     
-    if(!this.queue.length) {
+    if(!valence.loader.queue.length) {
       finishedTime = new Date().getTime();
-      if(finishedTime - this.loaderStarted >= this.minLoaderDisplayTime) {
-        this.wrapUp();
+      if(finishedTime - valence.loader.loaderStarted >= valence.loader.minLoaderDisplayTime) {
+        valence.loader.wrapUp();
       } else {
         setTimeout(function() {
           self.wrapUp();
         }, self.minLoaderDisplayTime - (finishedTime - self.loaderStarted));
       }
 
-      this.loaderStarted = null;
+      valence.loader.loaderStarted = null;
     }
   };
 
@@ -143,42 +149,42 @@ valenceApp.service('loader', ['valence', function(valence) {
    * 
    * @description  Abstracted DOM manipulation to cater to a DRY'er use of .finish()
    */
-  Loader.prototype.wrapUp = function() {
-    if(!this.contentCollection.length) {
-      // TODO: test this
-      this.contentCollection = (document.querySelectorAll(valence.loader.content).length) ? document.querySelectorAll(valence.loader.content)
+  valence.loader.wrapUp = function() {
+    if(!valence.loader.contentCollection.length) {
+      // TODO: test valence.loader
+      valence.loader.contentCollection = (document.querySelectorAll(valence.loader.content).length) ? document.querySelectorAll(valence.loader.content)
         : (function() {throw 'valence - ngLoader - It was requested that ['+valence.loader.content+'] be hidden when initiating the loader, however, no elements could be found in the DOM'})();
     }
 
-    if(!this.loaderCollection.length) {
-      this.loaderCollection = (document.querySelectorAll(valence.loader.loader).length) ? document.querySelectorAll(valence.loader.loader)
+    if(!valence.loader.loaderCollection.length) {
+      valence.loader.loaderCollection = (document.querySelectorAll(valence.loader.loader).length) ? document.querySelectorAll(valence.loader.loader)
         : (function() {throw 'valence - ngLoader - It was requested that ['+valence.loader.loader+'] be hidden when initiating the loader, however, no elements could be found in the DOM'})(); 
     }
 
-    for(var i=0; i<this.loaderCollection.length; i++) {
-      this.loaderCollection[i].classList.remove(this.loaderClasses.show);
-      this.loaderCollection[i].classList.add(this.loaderClasses.hide);
+    for(var i=0; i<valence.loader.loaderCollection.length; i++) {
+      valence.loader.loaderCollection[i].classList.remove(valence.loader.loaderClasses.show);
+      valence.loader.loaderCollection[i].classList.add(valence.loader.loaderClasses.hide);
     }
 
-    for(var i=0; i<this.contentCollection.length; i++) {
-      this.contentCollection[i].classList.remove(this.loaderClasses.hide);
-      this.contentCollection[i].classList.add(this.loaderClasses.show);
+    for(var i=0; i<valence.loader.contentCollection.length; i++) {
+      valence.loader.contentCollection[i].classList.remove(valence.loader.loaderClasses.hide);
+      valence.loader.contentCollection[i].classList.add(valence.loader.loaderClasses.show);
     }
 
-    this.loaderCollection = [];
-    this.contentCollection = [];
+    valence.loader.loaderCollection = [];
+    valence.loader.contentCollection = [];
   };
 
   /**
    * HALT
    * @description Force stops the loader but manually emptying the queue and calling finish
    */
-  Loader.prototype.halt = function() {
+  valence.loader.halt = function() {
     // force empty the queue, and call finish
-    this.queue = [];
-    this.finish();
+    valence.loader.queue = [];
+    valence.loader.finish();
   };
 
 
-  return new Loader();
+  return valence.loader;
 }]);

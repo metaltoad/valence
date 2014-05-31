@@ -8,6 +8,13 @@
  */
 valenceApp.service('store', ['valence', '$q', function(valence, $q) {
 
+  /**
+   * IN MEMORY STORE
+   * 
+   * @type {Object}
+   */
+  var store = window.valenceStore = {};
+
   /***********************************************************************************************************************************************
    * VALENCE - STORE ADAPTERS
    ***********************************************************************************************************************************************
@@ -24,12 +31,65 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
     /**
      * GET
      * 
-     * @param  {[type]} model [description]
+     * @param  {[type]} args.model [description]
      * @return {[type]}       [description]
      */
     get: function(model) {
       var store = JSON.parse(window.localStorage.valenceStore),
           data;
+
+      // Get store data if there.
+      if(store.hasOwnProperty(args.model)) {
+        data = store[args.model];
+      }
+
+      return data;
+    },
+    /**
+     * SET
+     * 
+     * @param {[type]} args.model [description]
+     * @param {[type]} data  [description]
+     */
+    set: function(model, data) {
+      var store = JSON.parse(window.localStorage.valenceStore);
+
+      store[args.model] = data;
+
+      window.localStorage.valenceStore = JSON.stringify(store);
+
+      return this.get(args.model);
+    },
+    remove: function(model) {
+      var store = JSON.parse(window.localStorage.valenceStore);
+
+      // Get store data if there.
+      if(store.hasOwnProperty(model)) {
+        delete store[args.model];
+
+        window.localStorage.valenceStore = JSON.stringify(store);
+        return true;
+      } else {
+        return false;
+      }
+    }
+  };
+
+
+  //
+  // IN MEMORY ADAPTER
+  //------------------------------------------------------------------------------------------//
+  // @description
+  
+  Adapters.memory = {
+    /**
+     * GET
+     * 
+     * @param  {[type]} args.model [description]
+     * @return {[type]}       [description]
+     */
+    get: function(model) {
+      var data;
 
       // Get store data if there.
       if(store.hasOwnProperty(model)) {
@@ -41,26 +101,25 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
     /**
      * SET
      * 
-     * @param {[type]} model [description]
+     * @param {[type]} args.model [description]
      * @param {[type]} data  [description]
      */
     set: function(model, data) {
-      var store = JSON.parse(window.localStorage.valenceStore);
-
+    
       store[model] = data;
-
-      window.localStorage.valenceStore = JSON.stringify(store);
 
       return this.get(model);
     },
+    /**
+     * REMOVE
+     * @param  {[type]} args.model [description]
+     * @return {[type]}       [description]
+     */
     remove: function(model) {
-      var store = JSON.parse(window.localStorage.valenceStore);
 
       // Get store data if there.
       if(store.hasOwnProperty(model)) {
         delete store[model];
-
-        window.localStorage.valenceStore = JSON.stringify(store);
         return true;
       } else {
         return false;
@@ -73,52 +132,64 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
    ***********************************************************************************************************************************************
    * @description On page-load/navigation: 
    */
-  var Store = function() {
-
-    // Set default storage engine
-    this.store = (valence.storageEngine && valence.storageEngine.primary)? valence.storageEngine.primary 
+  
+  valence.store = {};
+  
+  var engine = (valence.storageEngine && valence.storageEngine.primary)? valence.storageEngine.primary 
       : (valence.storageEngine && valence.storageEngine.fallbackToMemory)? 'memory' : (window.localStorage)? 'localStorage': [];
 
-    // Create default LS space.
-    if(this.store === 'localStorage' && window.localStorage.valenceStore === undefined) {
+  // Create default LS space.
+  if(engine === 'localStorage') {
+    if(valence.storageEngine.fetchOnReload || window.localStorage.valenceStore === undefined) {
       window.localStorage.valenceStore = JSON.stringify({});
     }
-
-    // Globalize it while debugging
-    return window.Store = this;
-  };
+  }
 
   /**
    * GET MODEL
    * 
-   * @param  {[type]} model [description]
-   * @param  {[type]} query [description]
+   * @param  {[type]} args.model [description]
+   * @param  {[type]} args.query [description]
    * @return {[type]}       [description]
    */
-  Store.prototype.getModel = function(model, opts, query) {
+  valence.store.get = function(args) {
     var def = $q.defer(),
-        data = Adapters[this.store].get(model),
+        data = Adapters[engine].get(args.model),
         qLen = 0,
         mLen = 0,
         result;
+
+    // Localization or restoration controls
+    // These api properties allow a user to prevent data from being localy stored
+    // or to force an update from the cloud by simply rejecting the promise. Forcing
+    // the next step in the getter flow to fetch from cloud
+    if(args.opts && args.opts.localize === false || args.opts.forceFetch === true) {
+      def.reject('store');
+    }
 
     // Fail early and harrrrd.
     if(!data) {
       def.reject(false)
     } else {
-      // if no query provided, it should be a straight 1:1 thing.
-      if(!query) {
+
+      // Has query-able items?
+      if(args.opts.belongsTo) {
+        args.query = valence.buildParamQuery(args.opts.belongsTo);
+      }
+
+      // if no args.query provided, it should be a straight 1:1 thing.
+      if(!args.query) {
         // Resolve promise
         def.resolve(data);
       } else {
         // As all queries are kvp objects, we can assume that if the data in
-        // the store is an array, they mean to query it by a collection of objects in the array.
-        // However, as the original data is an array, we aggregate matched queryies back to an array.
+        // the store is an array, they mean to args.query it by a collection of objects in the array.
+        // However, as the original data is an array, we aggregate matched args.queryies back to an array.
         
-        // Build query length outside of the for loop
+        // Build args.query length outside of the for loop
         // so it doesn't get bloated
-        for(var type in query) {
-          for(var param in query[type]) {
+        for(var type in args.query) {
+          for(var param in args.query[type]) {
             qLen++;
           }
         }
@@ -127,10 +198,10 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
           result = [];
           for(var i=0; i<data.length; i++) {
             if(data[i].constructor === Object) {
-              for(var type in query) {
-                for(var param in query[type]) {
+              for(var type in args.query) {
+                for(var param in args.query[type]) {
                   // Non strict equals here.
-                  if(data[i][param] && data[i][param] == query[type][param]) {
+                  if(data[i][param] && data[i][param] == args.query[type][param]) {
                     mLen++;
                     // If more than 0 and equal
                     if(qLen && mLen && qLen === mLen) {
@@ -156,18 +227,18 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
             def.reject(result);
           }
         } else if(data.constructor === Object) {
-          // loop through query to compare with data
-          for(var type in query) {
-            for(var param in query[type]) {
+          // loop through args.query to compare with data
+          for(var type in args.query) {
+            for(var param in args.query[type]) {
               qLen++;
-              if(data[param] && data[param] === query[type][param]) {
+              if(data[param] && data[param] === args.query[type][param]) {
                 mLen++;
               }
             }
           }
 
           // As long as they aren't both zero and
-          // the query matches are the same length as the total queries, we win.
+          // the args.query matches are the same length as the total queries, we win.
           if(qLen && mLen && qLen === mLen) {
             def.resolve(data);
           } else {
@@ -183,21 +254,27 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
 
   /**
    * SET MODEL
-   * @param {[type]} model [description]
+   * @param {[type]} args.model [description]
    * @param {[type]} data  [description]
    */
-  Store.prototype.setModel = function(model, data) {
+  valence.store.set = function(args) {
     var def = $q.defer(),
         res;
 
-    // Check the store for the current model
-    res = Adapters[this.store].set(model, data);
-    console.log(res);
-    if(res) {
-      console.log('resolving');
-      def.resolve(res);
+     // Resolve the promise right away if localized is
+    // set to false
+    if(args.opts && args.opts.localize === false) {
+      def.resolve(args.data);
     } else {
-      def.reject(false);
+
+      // Check the store for the current args.model
+      res = Adapters[engine].set(args.model, args.data);
+      
+      if(res) {
+        def.resolve(res);
+      } else {
+        def.reject(false);
+      }
     }
 
     // Return promise
@@ -206,13 +283,13 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
 
   /**
    * DELETE MODEL
-   * @param  {[type]} model [description]
+   * @param  {[type]} args.model [description]
    * @return {[type]}       [description]
    */
-  Store.prototype.deleteModel = function(model) {
+  valence.store.remove = function(args) {
     var def = $q.defer();
 
-    if(Adapters[this.store].remove(model)) {
+    if(Adapters[engine].remove(args.model)) {
       def.resolve(true);
     } else {
       def.reject(false);
@@ -225,5 +302,5 @@ valenceApp.service('store', ['valence', '$q', function(valence, $q) {
   // STORE INSTANTIATION
   //------------------------------------------------------------------------------------------//
   // @description Lite 'er up.
-  return new Store();
+  return valence.store;
 }]);

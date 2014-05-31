@@ -4,11 +4,19 @@
  * ANGULAR DATA - ANGULAR DATA MODULES - CLOUD
  *******************************************************************************************************
  */
-valenceApp.service('cloud', ['valence', 'auth', '$http', '$q', function(valence, auth, $http, $q) {
+valenceApp.service('cloud', ['valence', '$http', '$q', function(valence, $http, $q) {
   
+  // Base api definition
   var baseEarl = valence.api + '/';
 
-  function fetchModel(model, opts, query) {
+  /**
+   * GET
+   *
+   * @description HTTP RETRIEVAL
+   * @param  {[type]} args [description]
+   * @return {[type]}      [description]
+   */
+  valence.cloud.get = function(args) {
     var def = $q.defer(),
         token,
         predicates,
@@ -16,32 +24,36 @@ valenceApp.service('cloud', ['valence', 'auth', '$http', '$q', function(valence,
         
     // Defaults
     httpOpts.method = 'GET';
-    httpOpts.url = baseEarl+model;
+    httpOpts.url = baseEarl+args.model;
     httpOpts.params = null;
 
-    // Build url
-    if(opts.HTTP && opts.HTTP.GET && opts.HTTP.GET.url) {
-      httpOpts.url = baseEarl+opts.HTTP.GET.url;
+    // Build request data.
+    if(args.opts.HTTP && args.opts.HTTP.GET) {
+      
+      // Detect query
+      if(args.opts.HTTP.GET.params) {
+        args.query = valence.buildParamQuery(args.opts.HTTP.GET);
+      } else if(args.opts.belongsTo) {
+        args.query = valence.buildParamQuery(args.opts.belongsTo);
+      }
+      
+      // Build URL
+      if(args.opts.HTTP.GET.url) {
+        httpOpts.url = baseEarl+args.opts.HTTP.GET.url
+      }
+
+      // Will need to make sure that the validation endpoint hits before
+      if(args.opts.HTTP.GET.auth && !valence.auth.isValidated) {
+        def.reject();
+      }
+    } else {
+      if(args.opts.belongsTo) {
+        args.query = valence.buildParamQuery(args.opts.belongsTo);
+      }
     }
 
     // Build Params
-    if(query) {
-      httpOpts.params = {};
-      predicates = Object.keys(query);
-      for(var i=0; i<predicates.length; i++) {
-        for(var param in query[predicates[i]]) {
-          httpOpts.params[param] = query[predicates[i]][param];
-        }
-      }
-    }
-
-    // Get auth token if necessary
-    if(opts && opts.retrieval && opts.retrieval.auth) {
-      token = Auth.getAuthParams().token;
-      if(token) {
-        httpOpts.params.token = token;
-      }
-    }
+    if(args.query) { httpOpts.params = args.query.params || args.query.by}
 
     // Make request - I know $http returns a promise
     // I prefer keeping things consistent
@@ -54,48 +66,49 @@ valenceApp.service('cloud', ['valence', 'auth', '$http', '$q', function(valence,
     return def.promise;
   };
 
-  function saveModel(model, action, opts, query, data) {
+  /**
+   * SET
+   *
+   * @description  HTTP Persistance
+   * @return {[type]}
+   */
+  valence.cloud.set = function(args) {
     var def = $q.defer(),
         token,
+        action,
         httpOpts = {};
 
-        console.log(model, action, data, query);
-    action = action.toUpperCase();
+    action = args.action.toUpperCase();
 
     httpOpts.method = action;
-    httpOpts.url = baseEarl+model;
+    httpOpts.url = baseEarl+args.model;
     httpOpts.params = null;
     
-    if(opts.HTTP && opts.HTTP[action] && opts.HTTP[action].url) {
-      httpOpts.url = baseEarl+opts.HTTP[action].url;
+    if(args.opts.HTTP && args.opts.HTTP[action]) {
+
+      // Detect query
+      args.query = valence.buildParamQuery(args.opts.HTTP[action]);
+
+      if(args.opts.HTTP[action].url) {
+        httpOpts.url = baseEarl+args.opts.HTTP[action].url;
+      }
     }
 
     // Build Params
-    if(query && query.params) { httpOpts.params = query.params};
+    if(args.query && args.query.params) { httpOpts.params = args.query.params};
 
     // Message body
-    httpOpts.data = data;
-    
-    // Add any config declared data
-    if(query && query.data) {
-      for(var key in query.data) {
-        httpOpts.data[key] = query.data[key];
-      }
-    }
-    
-    // Get auth token if necessary
-    if(opts && opts.persistence && opts.persistence.auth) {
-      token = auth.getAuthParams().token;
-      if(token) {
-        if(!httpOpts.params) httpOpts.params = {};
-        httpOpts.params.token = token;
-      }
-    }
+    httpOpts.data = args.data;
 
+    // Add any config declared data
+    if(args.query && args.query.data) {
+      for(var key in args.query.data) {
+        httpOpts.data[key] = args.query.data[key];
+      }
+    }
     
     // Send request
     $http(httpOpts).success(function(data) {
-      console.log(data);
       def.resolve(data);
     }).error(function(data, status, headers, config) {
       def.reject({data: data, status: status, headers: headers, config: config});
@@ -104,8 +117,5 @@ valenceApp.service('cloud', ['valence', 'auth', '$http', '$q', function(valence,
     return def.promise;
   };
 
-  return {
-    fetchModel: fetchModel,
-    saveModel: saveModel
-  };
+  return valence.cloud;
 }]);
