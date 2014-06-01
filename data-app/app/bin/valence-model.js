@@ -542,7 +542,7 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', 'auth', '$ro
     data = serialize(args.opts, args.data);
 
     if(args.opts.normalize) {
-      args.opts.normalize(data, args, $q).then(function(normalized) {
+      args.opts.normalize(valence, args, data, $q).then(function(normalized) {
         scope[args.model] = data;
 
         args.def.resolve(normalized);
