@@ -1,6 +1,6 @@
 valence.model('users', {
   localize:false,
-  normalize: function(data, args, q) {
+  normalize: function(valence, args, data, q) {
     var def = q.defer(),
       obj = data;
 
