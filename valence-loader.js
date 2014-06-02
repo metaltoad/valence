@@ -150,29 +150,32 @@ valenceApp.service('loader', ['valence', '$q', function(valence, $q) {
    * @description  Abstracted DOM manipulation to cater to a DRY'er use of .finish()
    */
   valence.loader.wrapUp = function() {
-    if(!valence.loader.contentCollection.length) {
-      // TODO: test valence.loader
-      valence.loader.contentCollection = (document.querySelectorAll(valence.loader.content).length) ? document.querySelectorAll(valence.loader.content)
-        : (function() {throw 'valence - ngLoader - It was requested that ['+valence.loader.content+'] be hidden when initiating the loader, however, no elements could be found in the DOM'})();
-    }
 
-    if(!valence.loader.loaderCollection.length) {
-      valence.loader.loaderCollection = (document.querySelectorAll(valence.loader.loader).length) ? document.querySelectorAll(valence.loader.loader)
-        : (function() {throw 'valence - ngLoader - It was requested that ['+valence.loader.loader+'] be hidden when initiating the loader, however, no elements could be found in the DOM'})(); 
-    }
+    if(valence.loader.enabled) {
+      if(!valence.loader.contentCollection.length) {
+        // TODO: test valence.loader
+        valence.loader.contentCollection = (document.querySelectorAll(valence.loader.content).length) ? document.querySelectorAll(valence.loader.content)
+          : (function() {throw 'valence - ngLoader - It was requested that ['+valence.loader.content+'] be hidden when initiating the loader, however, no elements could be found in the DOM'})();
+      }
 
-    for(var i=0; i<valence.loader.loaderCollection.length; i++) {
-      valence.loader.loaderCollection[i].classList.remove(valence.loader.loaderClasses.show);
-      valence.loader.loaderCollection[i].classList.add(valence.loader.loaderClasses.hide);
-    }
+      if(!valence.loader.loaderCollection.length) {
+        valence.loader.loaderCollection = (document.querySelectorAll(valence.loader.loader).length) ? document.querySelectorAll(valence.loader.loader)
+          : (function() {throw 'valence - ngLoader - It was requested that ['+valence.loader.loader+'] be hidden when initiating the loader, however, no elements could be found in the DOM'})(); 
+      }
 
-    for(var i=0; i<valence.loader.contentCollection.length; i++) {
-      valence.loader.contentCollection[i].classList.remove(valence.loader.loaderClasses.hide);
-      valence.loader.contentCollection[i].classList.add(valence.loader.loaderClasses.show);
-    }
+      for(var i=0; i<valence.loader.loaderCollection.length; i++) {
+        valence.loader.loaderCollection[i].classList.remove(valence.loader.loaderClasses.show);
+        valence.loader.loaderCollection[i].classList.add(valence.loader.loaderClasses.hide);
+      }
 
-    valence.loader.loaderCollection = [];
-    valence.loader.contentCollection = [];
+      for(var i=0; i<valence.loader.contentCollection.length; i++) {
+        valence.loader.contentCollection[i].classList.remove(valence.loader.loaderClasses.hide);
+        valence.loader.contentCollection[i].classList.add(valence.loader.loaderClasses.show);
+      }
+
+      valence.loader.loaderCollection = [];
+      valence.loader.contentCollection = [];
+    }
   };
 
   /**

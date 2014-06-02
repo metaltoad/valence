@@ -1,7 +1,7 @@
 # Valence
 A full circle data management solution for Angular.js Apps.
 
-## Version 1.0.1
+## Version 1.0.2
 
  * The model layer now uses the strategy pattern to move through sequences.
  * Valence now includes access control with identity management.
@@ -11,6 +11,10 @@ A full circle data management solution for Angular.js Apps.
 
 ### Patches
 
+ 1.0.2
+ * Adding an enabled check to valence.loader.wrapUp to prevent errors from being thrown when the loader is disabled.
+ 
+ 1.0.1
  * Updated normalize arguments to be more consistent with Auth and ACL.
 
 ### Installation
