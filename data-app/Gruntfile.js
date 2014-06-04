@@ -4,6 +4,17 @@ var mountFolder = function (connect, dir) {
   return connect.static(require('path').resolve(dir));
 };
 
+
+var envs = {
+  dev:'http://localhost:9001',
+  development:'http://localhost:9001',
+  prod: 'http://54.187.93.210:3001',
+  production: 'http://54.187.93.210:3001'
+};
+
+var env;
+
+
 module.exports = function (grunt) {
   // load all grunt tasks
   require('matchdep').filterDev('grunt-*').forEach(grunt.loadNpmTasks);
@@ -272,6 +283,16 @@ module.exports = function (grunt) {
             'styles/fonts/*'
           ]
         }]
+      },
+      env: {
+        expand: true,
+        dest: 'app/',
+        src: 'env.js',
+        options: {
+          processContent: function(content, srcpath) {
+            return content.replace(/[\*]/g, env);
+          }
+        }
       }
     },
     shell: {
@@ -329,13 +350,30 @@ module.exports = function (grunt) {
 
   grunt.loadNpmTasks('grunt-exec');
 
-  grunt.registerTask('server', [
-    'clean:server',
-    'compass:server',
-    'livereload-start',
-    'connect:livereload',
-    'watch'
-  ]);
+  grunt.registerTask('server', function() {
+    var tasks = [
+      'clean:server',
+      'compass:server',
+      'livereload-start',
+      'connect:livereload',
+      'watch'
+    ];
+
+    var env_tasks = 'copy:env';
+
+
+    if(arguments.length) {
+
+      env = envs[arguments[0]];
+      console.log(env);
+
+      tasks.unshift(env_tasks);
+    } else {
+      grunt.log.error('Please specify the target environment');
+    }
+
+    grunt.task.run(tasks);
+  });
 
   grunt.registerTask('test', [
     'clean:server',
@@ -379,6 +417,10 @@ module.exports = function (grunt) {
     }
 
     grunt.task.run(tasks);
+  });
+
+  grunt.registerTask('deploy', function() {
+
   });
 
   grunt.registerTask('default', ['build']);
