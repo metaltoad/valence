@@ -8,6 +8,8 @@
 
 valenceApp.provider('valence', {
 
+  route: {},
+
   loader: {},
 
   models: [],
@@ -29,8 +31,6 @@ valenceApp.provider('valence', {
       validate: {}
     }
   },
-
-  route: {},
 
   storageEngine: {primary: 'localStorage', fallbackToMemory: true},
 
