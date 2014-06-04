@@ -8,7 +8,7 @@ app.config(function ($routeProvider, valenceProvider, $sceProvider) {
   $sceProvider.enabled(false);
   
   // NG DATA CONFIG
-  valenceProvider.api = 'http://localhost:9001';
+  valenceProvider.api = api;
 
   
   valenceProvider.loader.loader = '#loader',
@@ -78,7 +78,7 @@ app.config(function ($routeProvider, valenceProvider, $sceProvider) {
     .when('/blog/:post_id', {
       templateUrl: 'views/post.html',
       controller: 'PostCtrl',
-      model: ['post', 'comments'],
+      model: ['post'],
       auth: false
     })
     .when('/blog/:post_id/edit', {
@@ -110,8 +110,16 @@ app.config(function ($routeProvider, valenceProvider, $sceProvider) {
       templateUrl: 'views/docs.html',
       controller: 'DocsCtrl',
     })
+    .when('/404', {
+      templateUrl: 'views/404.html',
+      controller: 'MainCtrl'
+    })
+    .when('/500', {
+      templateUrl: 'views/500.html',
+      controller: 'MainCtrl'
+    })
     .otherwise({
-      redirectTo: '/'
+      redirectTo: '/404'
     });
   });
 
