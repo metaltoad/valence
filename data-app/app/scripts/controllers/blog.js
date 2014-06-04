@@ -1,4 +1,4 @@
-app.controller('BlogCtrl', function ($scope, $location, valence) {
+app.controller('BlogCtrl', function ($scope, $location, valence, $rootScope) {
 
   valence.scope('posts', $scope);
 
@@ -6,7 +6,7 @@ app.controller('BlogCtrl', function ($scope, $location, valence) {
 
   $scope.predicate = '-created';
 
-  $scope.excerpt = function(text) {
+  $rootScope.excerpt = $scope.excerpt = function(text) {
     if(text) {
       return text.slice(0, 250) + '...';
     }

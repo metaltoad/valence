@@ -4,4 +4,10 @@ app.controller('AuthorsCtrl', function($scope, valence) {
   
   $scope.author_posts = [];
 
+  $scope.excerpt = function(text) {
+    if(text) {
+      return text.slice(0, 250) + '...';
+    }
+  };
+
 });

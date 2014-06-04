@@ -1,6 +1,6 @@
 <div id="post" class="blog">
   <header>
-    <h1>{{post.title.toUpperCase()}} - {{post.author}}</h1>
+    <h1>{{post.title.toUpperCase()}} - <a href="#/authors/{{post.author_id}}">{{post.author}}</a></h1>
     <nav>
       <ul>
         <li><a href="#/blog/new" title="">New</a></li>
@@ -11,9 +11,14 @@
   <div class="content">
     <div class="body">
       <div class="avatar">
-        <img src="{{post.avatar}}">
+        <a href="#/authors/{{post.author_id}}">
+          <img ng-src="{{post.avatar}}">
+        </a>
+        <span>{{post.created | date:'MM/dd/yyyy @ h:mma'}}</span>
       </div>
-      {{post.body}}
+      <div>
+        {{post.body}}
+      </div>
     </div>
     <div class="comments">
       <div class="new-comment">

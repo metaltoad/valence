@@ -25,7 +25,7 @@ app.directive('comments', function($parse, $compile) {
         data.body = reply;
 
         valence.post('comments', {data: data}).then(function(data) {
-          console.log(data);
+          // Do something if needed.
         });
       }
 

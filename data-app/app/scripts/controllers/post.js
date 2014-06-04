@@ -27,13 +27,15 @@ app.controller('PostCtrl', function ($scope, valence, $location) {
 
   $scope.createPost = function(data) {
     $scope.save('posts', {data:data}).then(function(data) {
-      $location.path('/blog/'+data[0]._id);
+      valence.get('posts', {opts: {forceFetch:true}}).then(function(posts) {
+        $location.path('/blog/'+data[0]._id);
+      })
     });
   };
 
   $scope.updatePost = function(data, id) {
-    $scope.update('posts', {data:data}).then(function(post) {
-      $location.path('/blog/'+id);
+    valence.put('posts', {data:data}).then(function(post) {
+      $location.path('/blog/'+post[0]._id);
     });
   };
 });

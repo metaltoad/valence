@@ -306,6 +306,7 @@ section p {
   position: fixed;
   width: 100%;
   left:0;
+  top:70px;
   text-align: left;
   background-color: #efefef;
   z-index: 5;
@@ -325,7 +326,7 @@ section p {
   float: right;
   display: inline-block;
   position: relative;
-  top: -4px;
+  top: 6px;
   right: 20px;
 }
 
@@ -351,7 +352,7 @@ section p {
 /* List of blog posts */
 #posts {
   text-align: left;
-  width:60%;
+  width:80%;
 }
 
 .post {
@@ -363,6 +364,7 @@ section p {
 .post .meta {
   display: inline-block;
   float: right;
+  margin-top: 1.6em;
 }
 
 .post .meta li {
@@ -417,6 +419,11 @@ section p {
   font-size: 1.9em;
   padding: 10px 0;
   text-align: left;
+}
+
+#post .avatar {
+  border-bottom: 1px solid #ccc;
+  display: inline;
 }
 
 .comments {
@@ -497,4 +504,48 @@ section p {
   width:60%;
   border-bottom:1px dashed #ccc;
   padding-top: 1em;
+}
+
+.form {
+  margin-top: 5%; 
+}
+
+.blog .form {
+  margin-top: 0;
+}
+
+.form input, 
+.form textarea {
+  display: block;
+  margin:10px auto;
+  padding: 4px 3px;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  width: 30%;
+  line-height: 2em;
+  font-size: 1.8em;
+  outline: none;
+}
+
+.form input:focus,
+.form textarea:focus {
+  border:2px solid #666;
+}
+
+.post-form .form {
+  text-align: left;
+}
+
+.post-form .form input, 
+.post-form .form textarea {
+  margin:10px 0;
+}
+
+.post-form .form textarea {
+  width:100%;
+  font-size: 1.1em;
+}
+
+.post-form .form input[type=submit] {
+  width:12%;
 }
