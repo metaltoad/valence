@@ -28,7 +28,7 @@ valenceApp.service('loader', ['valence', '$q', function(valence, $q) {
   valence.loader.contentCollection = [];
 
   // Minimum time to display the loader
-  valence.loader.minLoaderDisplayTime = 1000;
+  valence.loader.minLoaderDisplayTime = 250;
 
   //
   // OPERATIONS
