@@ -6,7 +6,7 @@ app.directive('datanav', function($compile) {
     controller: function($scope, $element, $attrs, $rootElement, $rootScope, valence) {
 
       $scope.getNavTemplate = function() {
-        return 'http://localhost:9000/scripts/directives/templates/' + ((valence.auth.isValidated)? 'logged-in_nav.html' : 'logged-out_nav.html');
+        return '/scripts/directives/templates/' + ((valence.auth.isValidated)? 'logged-in_nav.html' : 'logged-out_nav.html');
       };
 
       // This catched page load

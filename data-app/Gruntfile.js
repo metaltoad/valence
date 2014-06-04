@@ -280,7 +280,8 @@ module.exports = function (grunt) {
             '.htaccess',
             'components/**/*',
             'images/{,*/}*.{gif,webp}',
-            'styles/fonts/*'
+            'styles/fonts/*',
+            'scripts/directives/templates/*'
           ]
         }]
       },
@@ -293,6 +294,13 @@ module.exports = function (grunt) {
             return content.replace(/[\*]/g, env);
           }
         }
+      },
+      deploy: {
+        expand:true,
+        flatten: true,
+        dot:true,
+        dest: '<%= yeoman.dist %>/',
+        src: 'app/env.js'
       }
     },
     shell: {
@@ -368,11 +376,10 @@ module.exports = function (grunt) {
       console.log(env);
 
       tasks.unshift(env_tasks);
+      grunt.task.run(tasks);
     } else {
       grunt.log.error('Please specify the target environment');
     }
-
-    grunt.task.run(tasks);
   });
 
   grunt.registerTask('test', [
@@ -382,13 +389,19 @@ module.exports = function (grunt) {
     'karma'
   ]);
 
-  grunt.registerTask('build', function() {
-    var tasks = [];
+  grunt.registerTask('release', function() {
 
-    var defaultTasks = [
+    var tasks = [
+      'uglify:bin',
+      'exec:build'
+    ];
+
+    grunt.task.run(tasks);
+  });
+
+  grunt.registerTask('deploy', function() {
+    var tasks = [
       'clean:dist',
-      'jshint',
-      'test',
       'compass:dist',
       'useminPrepare',
       'imagemin',
@@ -396,31 +409,26 @@ module.exports = function (grunt) {
       'htmlmin',
       'concat',
       'copy',
-      'cdnify',
       'ngmin',
       'uglify',
       'rev',
-      'usemin'
+      'usemin',
+      'copy:deploy'
     ];
 
-    var masterTasks = [
-      'uglify:bin',
-      'exec:build'
-    ];
+    var env_tasks = 'copy:env';
 
-    if(!arguments.length) {
-      tasks = defaultTasks;
+
+    if(arguments.length) {
+
+      env = envs[arguments[0]];
+      console.log(env);
+
+      tasks.unshift(env_tasks);
+      grunt.task.run(tasks);
     } else {
-      if(arguments[0] === 'master') {
-        tasks = masterTasks;
-      }
+      grunt.log.error('Please specify the target environment');
     }
-
-    grunt.task.run(tasks);
-  });
-
-  grunt.registerTask('deploy', function() {
-
   });
 
   grunt.registerTask('default', ['build']);
