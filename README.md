@@ -1,21 +1,26 @@
 # Valence
 A full circle data management solution for Angular.js Apps.
 
-## Version 1.0.2
+## Version 1.1.0
 
- * The model layer now uses the strategy pattern to move through sequences.
- * Valence now includes access control with identity management.
- * Consistent API across modules.
- * Consolidated route hook system.
- * Stronger auth integration when fetching/persisting data in the cloud.
+ ### Version 1 Updates
+  * The model layer now uses the strategy pattern to move through sequences.
+  * Valence now includes access control with identity management.
+  * Consistent API across modules.
+  * Consolidated route hook system.
+  * Stronger auth integration when fetching/persisting data in the cloud.
 
-### Patches
+ ### Version 1.1.0 Updates
+  * Valence now supports custom redirects based on HTTP status codes when a model fails in the cloud layer. For example, say with route: blog/:post_id, blog/1234 would return a valid post object, however blog/12345 would not as well as return 404. Through setting a redirect option in the HTTP action in question, the user will be navigated to the specified page.
+ * Strtegy.fail assigns args.data just like strategy.pass does to be more consistent.
 
- 1.0.2
- * Adding an enabled check to valence.loader.wrapUp to prevent errors from being thrown when the loader is disabled.
+ ### Patches
+
+  1.0.2
+   * Adding an enabled check to valence.loader.wrapUp to prevent errors from being thrown when the loader is disabled.
  
- 1.0.1
- * Updated normalize arguments to be more consistent with Auth and ACL.
+  1.0.1
+   * Updated normalize arguments to be more consistent with Auth and ACL.
 
 ### Installation
 
