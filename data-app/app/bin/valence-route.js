@@ -146,11 +146,36 @@ valenceApp.service('route', ['valence', 'loader', '$rootScope', '$location', '$q
     });
   };
 
-  //
-  // API
-  //------------------------------------------------------------------------------------------//
-  // @description
-  valence.route = {};
+
+  /**
+   * REDIRECT
+   *
+   * @description Will cause the page to redirect if a matching status code option is found.
+   * @param  {[type]} args [description]
+   * @param  {[type]} data [description]
+   * @return {[type]}      [description]
+   */
+  valence.route.redirect = function(args, data) {
+    var def = $q.defer();
+        
+    data = data || {};
+    
+    if(args.opts.HTTP && args.opts.HTTP[args.action] && args.opts.HTTP[args.action].redirect) {
+      if(args.data && args.data.status) {
+        if(args.opts.HTTP[args.action].redirect[args.data.status]) {
+          $location.path(args.opts.HTTP[args.action].redirect[args.data.status]);
+          def.resolve({});
+        } else {
+          def.reject(args);
+        }
+      }
+    } else {
+      def.resolve(data);
+    }
+
+
+    return def.promise;
+  }
 
   /**
    * ADD HOOK
@@ -177,5 +202,5 @@ valenceApp.service('route', ['valence', 'loader', '$rootScope', '$location', '$q
 
   });
 
-  return valence;
+  return valence.route;
 }]);

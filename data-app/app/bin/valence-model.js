@@ -197,6 +197,7 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', 'auth', '$ro
       ignoreDefaultConfig: false,
       storeInMemory: false,
       refreshModel: true,
+      fetchOnSave: true,
       auth: false
     };
 
@@ -235,8 +236,12 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', 'auth', '$ro
       {fn: store.set, fail: self.halt, pass: self.conquer, overriden: self.conquer, overrides:[!self.opts.localize], name: 'store.set'}
     ];
 
+    this.sequences.GET.redirect = [
+      {fn: route.redirect, fail: self.halt, pass: self.conquer, name:'route.redirect'}
+    ];
+
     this.sequences.GET.cloud = [
-      {fn: cloud.get, fail: self.halt, pass: this.sequences.GET.save, name:'cloud.get'}
+      {fn: cloud.get, fail: this.sequences.GET.redirect, pass: this.sequences.GET.save, name:'cloud.get'}
     ];
 
     this.sequences.GET.store = [
@@ -258,7 +263,7 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', 'auth', '$ro
     ];
 
     this.sequences.POST.fetch = [
-      {fn: cloud.get, fail: self.halt, pass: this.sequences.POST.store, name:'cloud.get', overriden: this.sequences.POST.store, overrides:[!self.opts.refreshModel]}
+      {fn: cloud.get, fail: self.halt, pass: this.sequences.POST.store, name:'cloud.get', overriden: self.conquer, overrides:[!self.opts.refreshModel]}
     ];
 
     this.sequences.POST.cloud = [
@@ -360,6 +365,10 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', 'auth', '$ro
           }
         }, function(data) {
 
+          if(data) {
+            self.args.data = data
+          }
+          
           if(strategy.fail) {
             if(strategy.fail.constructor === Function) {
               return strategy.fail(self.args, data);
