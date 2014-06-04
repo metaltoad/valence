@@ -5,6 +5,6 @@ valence.model('post', {
     by: {post_id: '_id'}
   },
   HTTP: {
-    GET: {url: 'posts', params: {post_id: '_id'}}
+    GET: {url: 'posts', params: {post_id: '_id'}, redirect: {404: '/404', 500: '/500'}}
   }
 });

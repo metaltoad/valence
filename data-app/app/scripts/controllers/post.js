@@ -1,4 +1,4 @@
-app.controller('PostCtrl', function ($scope, valence, $location, $location) {
+app.controller('PostCtrl', function ($scope, valence, $location) {
 
   valence.scope(['post', 'comments'], $scope);
 
@@ -6,7 +6,11 @@ app.controller('PostCtrl', function ($scope, valence, $location, $location) {
 
   $scope.edit = ($location.path().match('/edit') === null)? $location.path() + '/edit' : $location.path();
   
-  $scope.comments = [];
+  if(!$location.path().match('new')) {
+    valence.get('comments').then(function(comments) {
+      $scope.comments = comments;
+    });
+  }
 
   $scope.saveComment = function(model, data) {
     valence.acl.getIdentity().then(function(identity) {
@@ -23,7 +27,7 @@ app.controller('PostCtrl', function ($scope, valence, $location, $location) {
 
   $scope.createPost = function(data) {
     $scope.save('posts', {data:data}).then(function(data) {
-      $location.path('/blog');
+      $location.path('/blog/'+data[0]._id);
     });
   };
 

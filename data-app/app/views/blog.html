@@ -8,17 +8,17 @@
     </nav>
   </header>
   <div id="posts" class="content">
-    <ul class ="post" ng-repeat="post in posts | orderBy:predicate:false">
+    <ul ng-if="posts" class ="post" ng-repeat="post in posts | orderBy:predicate:false">
       <li class="post-title"><a href="#/blog/{{post._id}}">{{post.title}}</a></li>
       <li class="post-excerpt">{{excerpt(post.body)}}</li>
       <li>
         <ul class="meta">
-          <li class="post-date">{{formatDate(post.created)}},</li>
+          <li class="post-date">{{post.created | date:'MM/dd/yyyy @ h:mma'}},</li>
           <li class="post-author"><a href="#/authors/{{post.author_id}}">{{post.author}}</a>
           <li class="post-avatar"><a href="#/authors/{{post.author_id}}"><img ng-src="{{post.avatar}}"></a></li>
         </ul>
       </li>
     </ul>
-    </li>
+    <div ng-if="!posts.length"><h1>Be the first to <a href="#/blog/new">post!</a></h1></div>
   </div>
 </div>

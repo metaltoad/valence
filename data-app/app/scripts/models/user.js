@@ -3,7 +3,7 @@ valence.model('user', {
     GET: { auth: true}
   },
   // localize:false,
-  normalize: function(data, args, q) {
+  normalize: function(valence, args, data, q) {
     var def = q.defer(),
         obj = {};
 

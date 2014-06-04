@@ -1,6 +1,9 @@
-<div class="text">{{comment.body}}</div>
-<ul>
-  <li>{{comment.author}}</li>
-  <li>{{comment.created}}</li>
-  <li ng-click="" class="reply">Reply</li>
-</ul>
+
+<div ng-repeat="comment in comments" class="comment-wrapper">
+  <div ng-transclude></div>
+  <div class="replies" ng-if="comment.comments">
+    <div comments="comment.comments">
+      <div ng-transclude></div>
+    </div>
+  </div>
+</div>

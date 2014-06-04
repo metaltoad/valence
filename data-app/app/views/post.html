@@ -24,14 +24,18 @@
         <header>
           <h2>Comments</h2>
         </header>
-
-        <div ng-repeat="comment in comments">
+        <div comments="comments">
           <div class="text">{{comment.body}}</div>
-          <ul >
-            <li>{{comment.author}}</li>
-            <li>{{comment.created}}</li>
-            <li ng-click="" class="reply">Reply</li>
+          <ul>
+            <li ng-if="comment.user_id"><a href="#/authors/{{comment.user_id}}">{{comment.author}}</a></li>
+            <li ng-if="!comment.user_id">Anon</li>
+            <li>{{comment.created | date:'MM/dd/yyyy @ h:mma'}}</li>
+            <li ng-click="showReply = true" class="reply">Reply</li>
           </ul>
+          <div class="new-comment" ng-if="showReply">
+            <textarea ng-model="reply"></textarea>
+            <button type="submit" ng-click="submitReply(comment, reply)">Post Comment</button>
+          </div>
         </div>
       </div>
     </div>  

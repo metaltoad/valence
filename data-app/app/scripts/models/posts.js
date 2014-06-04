@@ -7,6 +7,5 @@ valence.model('posts', {
     PUT: {url: 'posts', params: {post_id: 'post_id'}},
     GET: {url: 'posts'}
   },
-  
-  // forceFetch: tru
+  refreshModel: false
 });
