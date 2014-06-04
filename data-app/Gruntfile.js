@@ -323,7 +323,14 @@ module.exports = function (grunt) {
           stdout:true
         }
       },
-      command: 'pwd; cd data-app; npm install; bower install;'
+      command: 'pwd; cd data-app; npm install; bower install;',
+      deploy: {
+        options: {
+          stdout:true,
+          stderr:true
+        },
+        command: 'cd ../ git add . && git commit -m "New Demo App Depoly" && git subtree push --prefix data-app/dist origin gh-pages'
+      }
     },
     gitcheckout: {
       master: {
@@ -422,9 +429,13 @@ module.exports = function (grunt) {
     if(arguments.length) {
 
       env = envs[arguments[0]];
-      console.log(env);
 
       tasks.unshift(env_tasks);
+
+      if(arguments[0] === 'prod' || arguments[0] === 'production') {
+        tasks.push('shell:deploy');
+      }
+
       grunt.task.run(tasks);
     } else {
       grunt.log.error('Please specify the target environment');
