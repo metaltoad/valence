@@ -72,7 +72,6 @@ exports.newPost = function(data, fn) {
         if(err) return fn(err);
         data.author_id = new ObjectID(data.author_id);
         data.author = user.name;
-        data.avatar = "http://placehold.it/64x64";
         data.created = new Date().getTime();
         collection.insert(data, {w:1}, function(err, doc) {
           if(err) return fn(err);

@@ -67,6 +67,7 @@ exports.addUser = function(user, fn) {
       if(!user.password) {
         fn('No password provided');
       } else {
+        user.avatar = "http://placesheen.com/64/64";
         user.password = passHash.generate(user.password);
         collection.insert(user, {w:1}, function(err, item) {
           fn(null, item[0]);
