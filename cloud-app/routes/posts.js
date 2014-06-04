@@ -25,11 +25,11 @@ exports.initRoute = function(app, Posts, auth) {
         }
       })
     } else {
-      Posts.getPosts(req.query.post_id, function(err, posts) {
+      Posts.getPosts(req.query.post_id, function(err, status, posts) {
         if(err) {
-          res.send(500, err);
+          res.send(status, err);
         } else {
-          res.send(posts);
+          res.send(200, posts);
         }
       })
     }

@@ -17,11 +17,19 @@ exports.getPosts = this.getPosts = function(id, fn) {
   }
 
   collection.find(query).toArray(function(err, items) {
-    if(id && items.constructor === Array && items.length === 1) {
+    console.log(items);
+    if(err) return fn(err, 500, items);
+
+    if(items.length === 1) {
       items = items[0]
+      return fn(null, 200, items);
+    } else if(items.length > 1) {
+      return fn(null, 200, items);
+    } else if(!id && !items.length) {
+      return fn(null, 200, items);
+    } else {
+      return fn('Could not find post', 404, items);
     }
-    
-    return fn(err, items);
   });
 };
 
@@ -47,6 +55,12 @@ exports.getPostsByAuthorId = this.getPostsByAuthorId = function(id, fn) {
  */
 exports.findById = this.findById = function(id, fn) {
   collection.find({_id: new ObjectID(id)}).toArray(function(err, item) {
+    if(err) return fn(err, 500, item);
+
+    if(!item.length) {
+      return fn('Could not find post', 404, item)
+    }
+
     return fn(err, item);
   });
 };
