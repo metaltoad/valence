@@ -1,0 +1,20 @@
+<div class="blog post-form">
+  <header>
+    <h1>New Blog Post</h1>
+    <nav>
+      <ul>
+        <li><a href="#/blog/new" title="">New</a></li>
+        <li><a ng-href="#{{edit}}">Edit</a></li>
+      </ul>
+    </nav>
+  </header>
+  <div class="form">
+    <form>
+      <input type="text"placeholder="title" ng-model="title">
+      <hr />
+      <textarea name="" placeholder="body" ng-model="body"></textarea>
+      <input type="submit" ng-click="createPost({title: title, body: body})">
+    </form>
+  </div>
+</div>
+
