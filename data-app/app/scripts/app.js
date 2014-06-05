@@ -22,18 +22,18 @@ app.config(function ($routeProvider, valenceProvider, $sceProvider) {
 
   valenceProvider.auth.endpoints = {
     login: {
-      URL: 'http://localhost:9001/session',
+      URL: api+'/session',
       requires: ['username', 'password'],
       method: 'POST',
       success: '/'
     },
     logout: {
-      URL: 'http://localhost:9001/session',
+      URL: api+'/session',
       method: 'DELETE',
       success : '/'
     },
     validate: {
-      URL: 'http://localhost:9001/session',
+      URL: api+'/session',
       method: 'GET',
       name: 'token'
     }
