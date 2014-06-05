@@ -6,11 +6,19 @@ var mountFolder = function (connect, dir) {
 
 
 var envs = {
-  dev:'http://localhost:9001',
-  development:'http://localhost:9001',
-  prod: 'http://54.187.93.210:3001',
-  production: 'http://54.187.93.210:3001'
+  dev: {
+    api: 'http://localhost:9001',
+    view_prefix: ""
+  },
+  prod: {
+    api: 'http://54.187.93.210:3001',
+    view_prefix: '/valence'
+  }
 };
+
+
+envs.development = envs.dev;
+envs.production = envs.prod;
 
 var env;
 
@@ -291,7 +299,18 @@ module.exports = function (grunt) {
         src: 'env.js',
         options: {
           processContent: function(content, srcpath) {
-            return content.replace(/[\*]/g, env);
+              return content.replace(/_api_/g, ''+env.api+'');
+          }
+        }
+      },
+      view: {
+        expand: true,
+        flatten:true,
+        dest: 'app/',
+        src: 'app/env.js',
+        options: {
+          processContent: function(content, srcpath) {
+              return content.replace(/_view_prefix_/g, ''+env.view_prefix+'');
           }
         }
       },
@@ -375,6 +394,7 @@ module.exports = function (grunt) {
     ];
 
     var env_tasks = 'copy:env';
+    var view_tasks = 'copy:view';
 
 
     if(arguments.length) {
@@ -382,7 +402,8 @@ module.exports = function (grunt) {
       env = envs[arguments[0]];
       console.log(env);
 
-      tasks.unshift(env_tasks);
+      tasks.unshift(env_tasks, view_tasks);
+
       grunt.task.run(tasks);
     } else {
       grunt.log.error('Please specify the target environment');
@@ -424,13 +445,14 @@ module.exports = function (grunt) {
     ];
 
     var env_tasks = 'copy:env';
+    var view_tasks = 'copy:view';
 
 
     if(arguments.length) {
 
       env = envs[arguments[0]];
 
-      tasks.unshift(env_tasks);
+      tasks.unshift(env_tasks, view_tasks);
 
       if(arguments[0] === 'prod' || arguments[0] === 'production') {
         tasks.push('shell:deploy');
