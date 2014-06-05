@@ -289,7 +289,8 @@ module.exports = function (grunt) {
             'components/**/*',
             'images/{,*/}*.{gif,webp}',
             'styles/fonts/*',
-            'scripts/directives/templates/*'
+            'scripts/directives/templates/*',
+            'views/post/*',
           ]
         }]
       },
@@ -349,6 +350,13 @@ module.exports = function (grunt) {
           stderr:true
         },
         command: 'cd ../ git add . && git commit -m "New Demo App Depoly" && git subtree push --prefix data-app/dist origin gh-pages'
+      },
+      deploy_cloud: {
+        options: {
+          stderr: true,
+          stdout: true
+        },
+        command: 'cd ../cloud-app; scp -rv -i ~/tagimacator.pem ./ ec2-user@54.187.93.210:/home/ec2-user/Sites/valence'
       }
     },
     gitcheckout: {
