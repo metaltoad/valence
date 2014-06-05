@@ -2,7 +2,7 @@ app.directive('datanav', function($compile) {
   return {
     scope: false,
     restrict: 'E',
-    templateUrl: '/scripts/directives/templates/nav.html',
+    templateUrl: view_prefix +'/scripts/directives/templates/nav.html',
     controller: function($scope, $element, $attrs, $rootElement, $rootScope, valence) {
 
       $scope.getNavTemplate = function() {

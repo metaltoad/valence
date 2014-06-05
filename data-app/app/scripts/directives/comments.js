@@ -7,7 +7,7 @@ app.directive('comments', function($parse, $compile) {
   return {
     restrict: 'A',
     scope: {comments: '='},
-    templateUrl: 'views/comments.html',
+    templateUrl: view_prefix + '/views/comments.html',
     replace: false,
     transclude: true,
     controller: function($scope, $element, $attrs, valence) {
