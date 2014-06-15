@@ -549,3 +549,25 @@ section p {
 .post-form .form input[type=submit] {
   width:12%;
 }
+
+/**
+ * SLIDES
+ */
+
+#slides {
+  height:100%;
+  text-align: center;
+  width:100%;
+  display: table;
+}
+
+.slide-wrapper {
+  width: 100%;
+  display: table-cell;
+  vertical-align: middle;
+}
+
+#slides .hero h1 {
+  font-size: 10em;
+}
+
