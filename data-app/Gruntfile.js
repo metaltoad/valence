@@ -11,7 +11,7 @@ var envs = {
     view_prefix: ""
   },
   prod: {
-    api: 'http://54.187.93.210:3001',
+    api: 'http://54.187.123.232:3001',
     view_prefix: '/valence'
   }
 };
@@ -146,17 +146,6 @@ module.exports = function (grunt) {
         }
       },
       bin: {
-        files: {
-          '<%= yeoman.app %>/bin/min/angular-data.min.js': [
-            '<%= yeoman.app %>/bin/angular-data.js',
-            '<%= yeoman.app %>/bin/angular-data-core.js',
-            '<%= yeoman.app %>/bin/angular-data-model.js',
-            '<%= yeoman.app %>/bin/angular-data-store.js',
-            '<%= yeoman.app %>/bin/angular-data-loader.js',
-            '<%= yeoman.app %>/bin/angular-data-cloud.js',
-            '<%= yeoman.app %>/bin/angular-data-auth.js'
-          ]
-        }
       }
     },
     useminPrepare: {
@@ -356,7 +345,7 @@ module.exports = function (grunt) {
           stderr: true,
           stdout: true
         },
-        command: 'cd ../cloud-app; scp -rv -i ~/tagimacator.pem ./ ec2-user@54.187.93.210:/home/ec2-user/Sites/valence'
+        command: 'cd ../cloud-app; scp -rv -i ~/kstowell.pem ./ ec2-user@54.187.123.232:/home/ec2-user/Sites/valence/'
       }
     },
     gitcheckout: {
