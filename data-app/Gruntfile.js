@@ -330,9 +330,9 @@ module.exports = function (grunt) {
       bin_master_next: {
         options: {
           stdout:true
-        }
+        },
+        command: 'pwd; cd data-app; npm install; bower install;'
       },
-      command: 'pwd; cd data-app; npm install; bower install;',
       deploy: {
         options: {
           stdout:true,
