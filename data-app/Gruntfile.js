@@ -345,7 +345,7 @@ module.exports = function (grunt) {
           stderr: true,
           stdout: true
         },
-        command: 'cd ../cloud-app; scp -rv -i ~/kstowell.pem ./ ec2-user@54.187.123.232:/home/ec2-user/Sites/valence/'
+        command: 'cd ../cloud-app; scp -rv -i ~/.ssh/kstowell.pem ./ ec2-user@54.187.123.232:/home/ec2-user/Sites/valence/'
       }
     },
     gitcheckout: {
