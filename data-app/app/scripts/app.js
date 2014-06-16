@@ -110,6 +110,14 @@ app.config(function ($routeProvider, valenceProvider, $sceProvider) {
       templateUrl: 'views/docs.html',
       controller: 'DocsCtrl',
     })
+    .when('/slides', {
+      templateUrl: 'views/slide.html',
+      controller: 'SlideCtrl'
+    })
+    .when('/slides/:slide', {
+      templateUrl: 'views/slide.html',
+      controller: 'SlideCtrl'
+    })
     .when('/404', {
       templateUrl: 'views/404.html',
       controller: 'MainCtrl'
