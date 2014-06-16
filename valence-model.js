@@ -45,6 +45,8 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', 'auth', '$ro
   // UTILITY FUNCTIONS
   //------------------------------------------------------------------------------------------//
   
+  valence.utils = {};
+
   /**
    * SAFE APPLY
    * 
@@ -52,7 +54,7 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', 'auth', '$ro
    * @param  {Function} fn    [description]
    * @description queues up a $scope.apply
    */
-  function safeApply(scope, fn) {
+  var safeApply = valence.utils.safeApply = function(scope, fn) {
     var self = this;
     var applier = setInterval(function() {
       var phase = scope.$$phase;
@@ -197,7 +199,7 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', 'auth', '$ro
       ignoreDefaultConfig: false,
       storeInMemory: false,
       refreshModel: true,
-      fetchOnSave: true,
+      skipApply: false,
       auth: false
     };
 
@@ -236,20 +238,16 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', 'auth', '$ro
       {fn: store.set, fail: self.halt, pass: self.conquer, overriden: self.conquer, overrides:[!self.opts.localize], name: 'store.set'}
     ];
 
-    this.sequences.GET.redirect = [
-      {fn: route.redirect, fail: self.halt, pass: self.conquer, name:'route.redirect'}
-    ];
-
     this.sequences.GET.cloud = [
-      {fn: cloud.get, fail: this.sequences.GET.redirect, pass: this.sequences.GET.save, name:'cloud.get'}
+      {fn: cloud.get, fail: self.halt, pass: this.sequences.GET.save, name:'cloud.get'}
     ];
 
     this.sequences.GET.store = [
-      {fn: store.get, fail: self.sequences.GET.cloud, pass: self.conquer, overrides:[self.opts.forceFetch], name:'store.get'}
+      {fn: store.get, fail: this.sequences.GET.cloud, pass: self.conquer, overrides:[self.opts.forceFetch], overriden: this.sequences.GET.cloud, name:'store.get'}
     ];
 
     this.sequences.GET.init = [
-      {fn: loader.run, pass: self.sequences.GET.store, overrides:[!valence.loader.enabled], name:'loader.run'}
+      {fn: loader.run, pass: this.sequences.GET.store, overrides:[!valence.loader.enabled], name:'loader.run'}
     ];
 
     //
@@ -263,11 +261,11 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', 'auth', '$ro
     ];
 
     this.sequences.POST.fetch = [
-      {fn: cloud.get, fail: self.halt, pass: this.sequences.POST.store, name:'cloud.get', overriden: self.conquer, overrides:[!self.opts.refreshModel]}
+      {fn: cloud.get, fail: self.halt, pass: this.sequences.POST.store, name:'cloud.get', overriden: this.sequences.POST.store, overrides:[!self.opts.refreshModel]}
     ];
 
     this.sequences.POST.cloud = [
-      {fn: cloud.set, fail: self.halt, pass: this.sequences.POST.fetch, name:'cloud.set'}
+      {fn: cloud.set, fail: self.halt, pass: this.sequences.POST.fetch, name:'cloud.set', overrides: [self.opts.ignoreOrigin], overriden: this.sequences.POST.store}
     ];
 
     this.sequences.POST.init = [
@@ -364,10 +362,6 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', 'auth', '$ro
             }
           }
         }, function(data) {
-
-          if(data) {
-            self.args.data = data
-          }
           
           if(strategy.fail) {
             if(strategy.fail.constructor === Function) {
@@ -537,8 +531,7 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', 'auth', '$ro
    * @description [description]
    */
   function apply(args) {
-    var scope,
-        data;
+    var scope;
     
     // Detect a scope set.
     for(var i=0; i<valence.models.length; i++) {
@@ -553,15 +546,16 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', 'auth', '$ro
 
     if(args.opts.normalize) {
       args.opts.normalize(valence, args, data, $q).then(function(normalized) {
-        
-        scope[args.model] = normalized;
+
+        if(!args.opts.skipApply) { scope[args.model] = normalized }
 
         args.def.resolve(normalized);
 
         loader.loaded(args.model);
       });
     } else {
-      scope[args.model] = data;
+
+      if(!args.opts.skipApply) { scope[args.model] = data }
 
       args.def.resolve(data);
 
