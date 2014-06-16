@@ -45,6 +45,8 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', 'auth', '$ro
   // UTILITY FUNCTIONS
   //------------------------------------------------------------------------------------------//
   
+  valence.utils = {};
+
   /**
    * SAFE APPLY
    * 
@@ -52,7 +54,7 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', 'auth', '$ro
    * @param  {Function} fn    [description]
    * @description queues up a $scope.apply
    */
-  function safeApply(scope, fn) {
+  var safeApply = valence.utils.safeApply = function(scope, fn) {
     var self = this;
     var applier = setInterval(function() {
       var phase = scope.$$phase;
