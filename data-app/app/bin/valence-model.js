@@ -362,10 +362,6 @@ valenceApp.service('model', ['valence', 'cloud', 'store', 'loader', 'auth', '$ro
             }
           }
         }, function(data) {
-
-          if(data) {
-            self.args.data = data
-          }
           
           if(strategy.fail) {
             if(strategy.fail.constructor === Function) {
