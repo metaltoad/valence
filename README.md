@@ -20,10 +20,6 @@ A full circle data management solution for Angular.js Apps.
  * Strtegy.fail assigns args.data just like strategy.pass does to be more consistent.
 
  ### Patches
- 
-  1.2.0 
-   * Fixed a bug with normalization in apply() that wouldn't assign normalized data to scope, but resolve it in the promise.
-   * Removed the args.data assignment on a failed strategy so the failed state could be accurately debuged when entering halt().
 
   1.1.1 
    * Fixed a bug with normalization that didn't assign normalized data to scope but only returned it within the promise object.
