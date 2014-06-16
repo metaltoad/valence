@@ -1,7 +1,7 @@
 # Valence
 A full circle data management solution for Angular.js Apps.
 
-## Version 1.1.1
+## Version 1.2.0
 
  ### Version 1 Updates
   * The model layer now uses the strategy pattern to move through sequences.
@@ -10,12 +10,17 @@ A full circle data management solution for Angular.js Apps.
   * Consolidated route hook system.
   * Stronger auth integration when fetching/persisting data in the cloud.
 
+ ### Version 1.2.0 Updates
+  * skipApply option has been added to bypass the apply stage. The primary use case for this is when an endpoint may return some data that isn't in compliance with the intention of the model.
+    In that case you can simply have the data passed back to you without assigning it to scope.
+  * Created a valence.utils namespace that houses some helper functions.
+
  ### Version 1.1.1 Updates
   * Valence now supports custom redirects based on HTTP status codes when a model fails in the cloud layer. For example, say with route: blog/:post_id, blog/1234 would return a valid post object, however blog/12345 would not as well as return 404. Through setting a redirect option in the HTTP action in question, the user will be navigated to the specified page.
  * Strtegy.fail assigns args.data just like strategy.pass does to be more consistent.
 
  ### Patches
- 
+
   1.1.1 
    * Fixed a bug with normalization that didn't assign normalized data to scope but only returned it within the promise object.
    * Fixed a bug with normalization where a global var existed, breaking minification.
