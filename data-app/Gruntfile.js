@@ -338,7 +338,7 @@ module.exports = function (grunt) {
           stdout:true,
           stderr:true
         },
-        command: 'cd ../ git add . && git commit -m "New Demo App Depoly" && git subtree push --prefix data-app/dist origin gh-pages'
+        command: 'git subtree push --prefix data-app/dist origin gh-pages'
       },
       deploy_cloud: {
         options: {
@@ -438,7 +438,7 @@ module.exports = function (grunt) {
       'uglify',
       'rev',
       'usemin',
-      'copy:deploy'
+      // 'copy:deploy'
     ];
 
     var env_tasks = 'copy:env';
