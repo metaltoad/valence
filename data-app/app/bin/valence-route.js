@@ -7,6 +7,10 @@ valenceApp.service('route', ['valence', 'loader', '$rootScope', '$location', '$q
 
   var hooks = [];
 
+  var previous = '/';
+
+  valence.route.previous = previous;
+
   /**
    * SPLIT AND STRIP
    * 
@@ -72,6 +76,10 @@ valenceApp.service('route', ['valence', 'loader', '$rootScope', '$location', '$q
     // Waint until routeParams are available or
     // we can say there aren't any
     getRouteParams().then(function(data) {
+
+      // Set the previous URL here, it prevents it from being set too quickly causing a race condition.
+      valence.route.previous = previous;
+
       for(var route in $route.routes) {
         var paramCounter = 0, // How many params exist
             paramMatchedCounter = 0, // How many params match
@@ -194,12 +202,11 @@ valenceApp.service('route', ['valence', 'loader', '$rootScope', '$location', '$q
 
   $rootScope.$on('$locationChangeSuccess', function(evt, absNewUrl, absOldUrl) {
 
-    // Don't save the URL
-    valence.route.previous = absOldUrl.split('#')[1];
+    // Set previous URL.
+    previous = absOldUrl.split('#')[1];
 
     // Parse the routes.
     parseRoutes();
-
   });
 
   return valence.route;
