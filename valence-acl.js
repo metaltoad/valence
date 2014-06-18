@@ -88,8 +88,10 @@ valenceApp.service('acl', ['valence', 'route', 'model', '$q', '$location', funct
           if(rules.redirect && rules.redirect.fail) {
             if(rules.redirect.fail === 'previous') {
               if($location.path() === valence.route.previous) {
+                console.log($location.path(), 'is previous');
                 return $location.path('/');
               } else {
+                console.log(valence.route.previous, 'is previous');
                 return $location.path(valence.route.previous);
               }
             } else {
