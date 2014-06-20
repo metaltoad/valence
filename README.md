@@ -1,7 +1,9 @@
 # Valence
-A full circle data management solution for Angular.js Apps.
+A data management framework for Angular.js
 
-## Version 1.2.0
+## Version 1.2.1
+
+***
 
  ### Version 1 Updates
   * The model layer now uses the strategy pattern to move through sequences.
@@ -9,6 +11,8 @@ A full circle data management solution for Angular.js Apps.
   * Consistent API across modules.
   * Consolidated route hook system.
   * Stronger auth integration when fetching/persisting data in the cloud.
+
+***
 
  ### Version 1.2.0 Updates
   * skipApply option has been added to bypass the apply stage. The primary use case for this is when an endpoint may return some data that isn't in compliance with the intention of the model.
@@ -20,6 +24,8 @@ A full circle data management solution for Angular.js Apps.
  * Strtegy.fail assigns args.data just like strategy.pass does to be more consistent.
 
  ### Patches
+  1.2.1
+   * Fixed a race condition with the ACL.previous options where the absOldURL was being set to the restrictied URL before the ACL rejected the identity. Causing an infinite loop.
 
   1.1.1 
    * Fixed a bug with normalization that didn't assign normalized data to scope but only returned it within the promise object.
@@ -31,6 +37,8 @@ A full circle data management solution for Angular.js Apps.
  
   1.0.1
    * Updated normalize arguments to be more consistent with Auth and ACL.
+
+***
 
 ### Installation
 
