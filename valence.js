@@ -1,79 +1,35 @@
 'use strict';
 
-/*******************************************************************************************************
- * VALENCE APP
- *******************************************************************************************************
- * @description Angular app declaration.
+/***********************************************************************************************************************************************
+ * VALENCE
+ ***********************************************************************************************************************************************
+ * @description
  */
-var valenceApp = angular.module('valence', []);
+angular.module('Valence', [])
+  .service('Valence', [
+    'Valence.Model', 
+    'Valence.Resource', 
+    'Valence.Events',
+    'Valence.System',
+    function(Model, Resource, Events, System) {
+      // Window namespace
+      window.Valence = {Models: {}, Resources: {}, Cache: {}, System: System};
 
-// Load the model service right off the bat
-valenceApp.run(['route', 'auth', 'acl', 'model', function(route, acl, model) {}])
-
-/**
- * GLOBAL VALENCE
- *
- * @description  Exposing a globalized object like this 
- *               allows for declarative model building
- * @type {Object}
- */
-window.valence = {};
-
-//
-// MODELS
-//------------------------------------------------------------------------------------------//
-// @description
-
-/**
- * VAELNCE MODELS
- *
- * @description  This starts out as a globalized container for models that later
- *               gets used in the Provider object.
- * @type {Array}
- */
-valence.models = [];
-
-/**
- * VALENCE MODEL
- *
- * @description Model registration.
- * @param  {[type]} model  [description]
- * @param  {[type]} fields [description]
- * @return {[type]}        [description]
- */
-valence.model = function(model, fields) {
-  var match = false,
-      obj = {};
-
-  for(var i=0;i<valence.models.length; i++) {
-    if(valence.models[i].name === model) {
-      match = true;
+      return {
+        Model: Model,
+        Resource: Resource,
+        Events: Events
+      };
     }
-  }
+  ]).run(['Valence.Events', function(Events) {
 
-  if(!match) {
-    obj.name = model;
-    for(var prop in fields) {
-      obj[prop] = fields[prop];
-    }
+    // Adds new models to the window namespace
+    Events.subscribe(Events.definitions.model.created, function(model) {
+      window.Valence.Models[model.name] = model;
+    });
 
-    valence.models.push(obj);
-  }
-};
-
-
-//
-// ROLES
-//------------------------------------------------------------------------------------------//
-// @description
-valence.roles = [];
-
-valence.role = function(role, fn) {
-  for(var i=0;i<valence.roles.length; i++) {
-    if(valence.roles[i].name === role) {
-      throw 'Valence - ACL: You cannot register two or more roles with the same name.'
-    }
-  }
-
-  valence.roles.push({name: role, fn: fn});
-};
+    // Adds new resources to window namespace
+    Events.subscribe(Events.definitions.resource.created, function(resource) {
+      window.Valence.Resources[resource.name] = resource;
+    });
+  }]);
