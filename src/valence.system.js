@@ -15,6 +15,8 @@ angular.module('Valence')
 
     var level = 1;
 
+    var reporter = {};
+        reporter.prefix = 'Valence - ';
     var System = {
       log: log,
       warn: warn,
@@ -22,7 +24,7 @@ angular.module('Valence')
       level: {
         get:getLevel,
         set:setLevel
-      };
+      }
     };
 
     return System;
@@ -35,8 +37,8 @@ angular.module('Valence')
 
     }
 
-    function error() {
-
+    function error(err) {
+      throw reporter.prefix + error;
     }
 
     function getLevel() {

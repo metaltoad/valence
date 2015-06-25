@@ -22,7 +22,7 @@ angular.module('Valence')
 
     Valence.Model = function(name, opts) {
       this.name = name;
-      this.opts = _.merge(this.defaults, opts);
+      this.opts = angular.merge(this.defaults, opts);
       this.resources = {};
       this.data = {};
 

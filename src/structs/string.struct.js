@@ -5,7 +5,7 @@
  ***********************************************************************************************************************************************
  * @description
  */
-angular.module('System.Valence')
+angular.module('Valence')
   .service('Structs.String', function() {
     var Struct = {};
 

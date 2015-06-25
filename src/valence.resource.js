@@ -5,7 +5,7 @@
  ***********************************************************************************************************************************************
  * @description
  */
-angular.module('System.Valence')
+angular.module('Valence')
   .service('Valence.Resource', ['Valence.Cache', 'Valence.Structs', 'Valence.Events', 'Valence.System', '$http', '$q', function(Cache, Structs, Events, System, $http, $q) {
     
     //
@@ -34,7 +34,7 @@ angular.module('System.Valence')
       // Resource members
       this.name = name;
       this.defaults = { type: Object, cache: {expires: 60000} };
-      this.config = _.merge({}, this.defaults, config); // Merge provided with defaults.
+      this.config = angular.merge(this.defaults, config); // Merge provided with defaults.
       this.data = new Structs[Valence.structs[this.config.type]](); // Create Struct.
 
       // Expose to System
@@ -54,7 +54,7 @@ angular.module('System.Valence')
     Valence.Resource.prototype.get = function(request) {
       request = request || {};
 
-      return this.read({url: this.url(this.config.url).segments(request.segments), params: request.params});
+      return this.read({method: 'GET', url: this.url(this.config.url).segments(request.segments), params: request.params});
     };
 
     /**
@@ -64,7 +64,7 @@ angular.module('System.Valence')
     Valence.Resource.prototype.put = function(request) {
       request = request || {};
 
-      return this.write({url: this.config.url, method: 'PUT', data:data});
+      return this.write({url: this.url(this.config.url).segments(request.segments), params: request.params, method: 'PUT', data:data});
     };
 
     /**
@@ -74,7 +74,7 @@ angular.module('System.Valence')
     Valence.Resource.prototype.post = function(request) {
       request = request || {};
 
-      return this.write({url: this.config.url, method: 'POST', data:data});
+      return this.write({url: this.url(this.config.url).segments(request.segments), params: request.params, method: 'POST', data:data});
     };
 
     /**
@@ -83,7 +83,7 @@ angular.module('System.Valence')
     Valence.Resource.prototype.delete = function(request) {
       request = request || {};
 
-      return this.write({url: this.config.url, method: 'DELETE'});
+      return this.write({url: this.url(this.config.url).segments(request.segments), params: request.params, method: 'DELETE'});
     };
 
     /**
@@ -92,15 +92,20 @@ angular.module('System.Valence')
      * @returns {*}
      */
     Valence.Resource.prototype.read = function(spec) {
-      var self = this;
-      var def = $q.defer();
+      var self = this,
+          cache = Cache(spec.url, this.config.cache),
+          def = $q.defer();
 
-      Cache.get(spec.url).then(function(data) {
+      cache.get(spec.url).then(function(data) {
         self.data.clean().fill(data);
+        def.resolve(data);
       }, function(err) {
-        $http({method: 'GET', url: spec.url}).success(function(data) {
-          Cache.set(spec.url, data).then(function(data) {
+        $http(spec).success(function(data) {
+          cache.set(spec.url, data).then(function(data) {
             self.data.clean().fill(data);
+            def.resolve(data);
+          }, function(err) {
+            def.reject(err);
           });
         });
       });
@@ -114,11 +119,12 @@ angular.module('System.Valence')
      * @returns {*}
      */
     Valence.Resource.prototype.write = function(spec) {
-      var self = this;
-      var def = $q.defer();
+      var self = this,
+        cache = Cache(spec.url, this.config.cache),
+        def = $q.defer();
 
       $http(spec).success(function(data) {
-        Cache.set(spec.url, data).then(function(data) {
+        cache.set(spec.url, data).then(function() {
           self.data.clean().fill(data);
           def.resolve(data);
         }, function(err) {
@@ -135,18 +141,24 @@ angular.module('System.Valence')
     // URL FORMATTING
     //------------------------------------------------------------------------------------------//
     // @description
-    Valence.Resource.prototype.url = function(url} {
+    Valence.Resource.prototype.url = function(url) {
+      var re = /^(http|https):\/\//g;
+
       if(!url) {
         return System.error('No url detected for resource: ' + this.name);
       }
 
+      if(!url.match(re)) {
+        return System.error('Url must be a fully qualified path');
+      }
+
       return {
-        segemnts: function(segments) {
-          var split = url.split();
+        segments: function(segments) {
+          for(var segment in segments) {
+            url = url.replace(new RegExp(':'+segment, 'gi'), segments[segment]);
+          }
 
-          if(!segments) { return url; }
-
-
+          return url;
         }
       }
     };

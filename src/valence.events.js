@@ -6,7 +6,7 @@
  * @description
  */
 angular.module('Valence')
-  .service('Valence.Events', [function() {
+  .service('Valence.Events', ['Valence.System', function(System) {
     var Events = {};
 
     return {
@@ -21,7 +21,7 @@ angular.module('Valence')
         }
       },
       publish: publish,
-      subscribe: subcribe
+      subscribe: subscribe
     };
 
     /**
@@ -38,9 +38,9 @@ angular.module('Valence')
           fn(data);
         });
 
-        Debugger.log('Event dispatched: '+ name +' - '+ data);
+        System.log('Event dispatched: '+ name +' - '+ data);
       } else {
-        Debugger.warn('Event: ' + name +' not found, attempted publish. Consider tracing to determine source.');
+        System.warn('Event: ' + name +' not found, attempted publish. Consider tracing to determine source.');
       }
     }
 
@@ -52,6 +52,6 @@ angular.module('Valence')
       }
 
       event.push(fn);
-      Debugger.log('Event subscribed: '+ name + ' - '+ fn);
+      System.log('Event subscribed: '+ name + ' - '+ fn);
     }
   }]);

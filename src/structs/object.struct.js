@@ -1,30 +1,22 @@
 'use strict';
 
 /***********************************************************************************************************************************************
- * Identity SYSTEM STRUCT ARRAY
+ * Identity SYSTEM STRUCT OBJECT
  ***********************************************************************************************************************************************
  * @description
  */
-angular.module('System.Valence')
-  .service('Structs.Array', function() {
+angular.module('Valence')
+  .service('Structs.Object', function() {
     var Struct = {};
 
-    //
-    // ARRAY INSTANCE
-    //------------------------------------------------------------------------------------------//
-    // @description
-    Struct.Array = function(spec) {
-      this.data = [];
-
-      for(var method in Struct.methods) {
-        this.data[method] = Struct.methods[method].bind(this.data);
-      }
+    Struct.Object = function(name, config) {
+      this.data = Object.create(Struct.methods);
 
       return this.data;
     };
 
     //
-    // ARRAY METHODS
+    // OBJECT METHODS
     //------------------------------------------------------------------------------------------//
     // @description
     Struct.methods = {};
@@ -33,7 +25,10 @@ angular.module('System.Valence')
      * Clean
      */
     Struct.methods.clean = function() {
-      this.length = 0;
+      for (var property in this) {
+        delete this[property];
+      }
+
       return this;
     };
 
@@ -42,14 +37,12 @@ angular.module('System.Valence')
      * @param data
      */
     Struct.methods.fill = function(data) {
-      var self = this;
-
-      data.forEach(function(itm) {
-        self.push(itm);
-      });
+      for (var property in data) {
+        this[property] = data[property];
+      }
 
       return this;
     };
 
-    return Struct.Array;
+    return Struct.Object;
   });

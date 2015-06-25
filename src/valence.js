@@ -5,6 +5,9 @@
  ***********************************************************************************************************************************************
  * @description
  */
+
+window.Valence = {Models: {}, Resources: {}, Cache: {}};
+
 angular.module('Valence', [])
   .service('Valence', [
     'Valence.Model', 
@@ -12,8 +15,9 @@ angular.module('Valence', [])
     'Valence.Events',
     'Valence.System',
     function(Model, Resource, Events, System) {
-      // Window namespace
-      window.Valence = {Models: {}, Resources: {}, Cache: {}, System: System};
+
+      // System
+      window.Valence.System = System;
 
       return {
         Model: Model,
@@ -21,7 +25,7 @@ angular.module('Valence', [])
         Events: Events
       };
     }
-  ]).run(['Valence.Events', function(Events) {
+  ]).run(['Valence.Events', 'Valence.System', function(Events, System) {
 
     // Adds new models to the window namespace
     Events.subscribe(Events.definitions.model.created, function(model) {
