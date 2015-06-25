@@ -1,7 +1,7 @@
 {
   "name": "valence",
   "main": "valence.js",
-  "version": "0.0.0",
+  "version": "1.2.1",
   "homepage": "https://github.com/metaltoad/valence",
   "description": "Data, Authentication and View Transition layers for Angular applications.",
   "keywords": [
@@ -9,6 +9,7 @@
     "Data-Management",
     "Data-Centralization",
     "Authentication",
+    "Access Control",
     "Storage",
     "Caching",
     "Transitions."
@@ -23,5 +24,8 @@
     "bower_components",
     "test",
     "tests"
-  ]
+  ],
+  "devDependencies": {
+    "angular-mocks": "~1.4.1"
+  }
 }

@@ -1,5 +1,6 @@
 .DS_Store
-node_modules/
-cloud-app/node_modules/
-data-app/node_modules/
-data-app/app/env.js
+npm-debug.log
+.idea
+bower_components
+node_modules
+

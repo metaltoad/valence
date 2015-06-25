@@ -1,0 +1,31 @@
+{
+  "name": "valence",
+  "version": "1.0.0",
+  "description": "A data management framework for Angular.js",
+  "main": "gulpfile.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ktstowell/valence.git"
+  },
+  "author": "Ken Stowell <stowell.kt@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ktstowell/valence/issues"
+  },
+  "homepage": "https://github.com/ktstowell/valence",
+  "devDependencies": {
+    "gulp": "^3.9.0",
+    "gulp-jshint": "^1.11.0",
+    "gulp-plumber": "^1.0.1",
+    "jasmine": "^2.3.1",
+    "jasmine-core": "^2.3.4",
+    "jshint-stylish": "^2.0.1",
+    "karma": "^0.12.37",
+    "karma-chrome-launcher": "^0.2.0",
+    "karma-jasmine": "^0.3.5",
+    "karma-jasmine-html-reporter": "^0.1.8"
+  }
+}
