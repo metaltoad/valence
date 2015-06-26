@@ -107,6 +107,8 @@ angular.module('Valence')
           }, function(err) {
             def.reject(err);
           });
+        }).error(function(err) {
+          def.reject(err);
         });
       });
 
@@ -163,6 +165,6 @@ angular.module('Valence')
       }
     };
 
-    // Resource exposure.
+    // Resource exposure. ch
     return Valence.Resource;
   }]);
