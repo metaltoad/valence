@@ -10,11 +10,11 @@ angular.module('Valence')
     'Structs.Array',
     'Structs.Object',
     'Structs.String',
-    'Structs.Number', function(vArray, vObject, vString, vNumber) {
+    'Structs.Number', function(sArray, sObject, sString, sNumber) {
       return {
-        Array: vArray,
-        Object: vObject,
-        String: vString,
-        Number: vNumber
+        Array: sArray,
+        Object: sObject,
+        String: sString,
+        Number: sNumber
       };
   }]);
